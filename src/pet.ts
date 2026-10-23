@@ -1,0 +1,77 @@
+// 寵物數值：0～100，依真實經過時間衰減
+
+export interface PetStats {
+  hunger: number; // 飽足
+  mood: number; // 心情
+  clean: number; // 清潔
+  energy: number; // 體力
+}
+
+export interface PetState {
+  stats: PetStats;
+  sleeping: boolean;
+}
+
+export type Mood = 'happy' | 'sad' | 'sick' | 'sleep';
+
+export const STAT_LABELS: Record<keyof PetStats, string> = {
+  hunger: '飽足',
+  mood: '心情',
+  clean: '清潔',
+  energy: '體力',
+};
+
+/** 每小時變化量 */
+const DECAY_PER_HOUR: PetStats = { hunger: -8, mood: -6, clean: -4, energy: -5 };
+const SLEEP_ENERGY_PER_HOUR = 15;
+
+export function newPet(): PetState {
+  return { stats: { hunger: 80, mood: 80, clean: 80, energy: 80 }, sleeping: false };
+}
+
+const clamp = (v: number) => Math.max(0, Math.min(100, v));
+
+/** 依經過的毫秒數更新數值（直接修改 pet） */
+export function applyElapsed(pet: PetState, ms: number): void {
+  const h = ms / 3_600_000;
+  const s = pet.stats;
+  s.hunger = clamp(s.hunger + DECAY_PER_HOUR.hunger * h);
+  s.mood = clamp(s.mood + DECAY_PER_HOUR.mood * h);
+  s.clean = clamp(s.clean + DECAY_PER_HOUR.clean * h);
+  s.energy = clamp(s.energy + (pet.sleeping ? SLEEP_ENERGY_PER_HOUR : DECAY_PER_HOUR.energy) * h);
+  // 睡飽自動起床
+  if (pet.sleeping && s.energy >= 100) pet.sleeping = false;
+}
+
+export function moodOf(pet: PetState): Mood {
+  if (pet.sleeping) return 'sleep';
+  const min = Math.min(...Object.values(pet.stats));
+  if (min < 15) return 'sick';
+  if (min < 40) return 'sad';
+  return 'happy';
+}
+
+export type Action = 'feed' | 'play' | 'clean' | 'sleep';
+
+/** 執行動作，回傳要顯示的訊息 */
+export function doAction(pet: PetState, action: Action): string {
+  const s = pet.stats;
+  if (pet.sleeping && action !== 'sleep') return '噓…正在睡覺';
+  switch (action) {
+    case 'feed':
+      s.hunger = clamp(s.hunger + 30);
+      return '好好吃！';
+    case 'play':
+      if (s.energy < 10) return '太累了，玩不動…';
+      s.mood = clamp(s.mood + 25);
+      s.energy = clamp(s.energy - 10);
+      s.hunger = clamp(s.hunger - 5);
+      return '好開心！';
+    case 'clean':
+      s.clean = 100;
+      return '洗得香香的～';
+    case 'sleep':
+      pet.sleeping = !pet.sleeping;
+      return pet.sleeping ? '晚安 zZ' : '起床囉！';
+  }
+}

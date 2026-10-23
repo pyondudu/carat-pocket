@@ -1,6 +1,6 @@
 // 選角畫面：第一次可以從 13 個裡任選；之後換主角只能選已解鎖的
 
-import { CHARACTERS, type Character } from '../data/characters';
+import { getCharacter, UNITS, type Character } from '../data/characters';
 import { characterCanvas } from '../draw';
 import { go, type Scene } from '../router';
 import { chooseMain, state } from '../state';
@@ -14,29 +14,39 @@ export function selectScene(): Scene {
         'header',
         { className: 'bar' },
         !firstTime && h('button', { className: 'ghost', textContent: '← 返回', onclick: () => go('home') }),
-        h('h1', { textContent: firstTime ? '選一個夥伴帶回家' : '換主角' }),
+        h('h1', { textContent: firstTime ? '選擇自己的本命吧！' : '換主角' }),
       );
       const hint = h('p', {
         className: 'hint',
         textContent: firstTime ? '選中的角色會成為主角，其他 12 個之後可以慢慢解鎖。' : '只能選已經解鎖的角色，數值各自保存。',
       });
-      const grid = h('div', { className: 'grid' });
-      for (const c of CHARACTERS) {
-        const locked = !firstTime && !state.unlocked.includes(c.id);
-        const tile = h(
-          'button',
-          { className: `tile${locked ? ' locked' : ''}${c.id === state.mainId ? ' current' : ''}` },
-          characterCanvas(c),
-          h('strong', { textContent: c.name }),
-          h('small', { textContent: locked ? '🔒 未解鎖' : c.member }),
+      const units = UNITS.map((u) => {
+        // 4 人排成 2×2，5 人排成上 2 下 3，每排置中
+        const rows = [u.ids.slice(0, 2), u.ids.slice(2)];
+        return h(
+          'section',
+          { className: 'unit' },
+          h('h2', { textContent: u.name }),
+          ...rows.map((ids) => h('div', { className: 'unit-row' }, ...ids.map((id) => tile(getCharacter(id), firstTime)))),
         );
-        tile.style.setProperty('--c', c.color);
-        tile.onclick = () => showDetail(c, locked);
-        grid.append(tile);
-      }
-      root.append(h('div', { className: 'screen select' }, header, hint, grid));
+      });
+      root.append(h('div', { className: 'screen select' }, header, hint, ...units));
     },
   };
+}
+
+function tile(c: Character, firstTime: boolean): HTMLElement {
+  const locked = !firstTime && !state.unlocked.includes(c.id);
+  const el = h(
+    'button',
+    { className: `tile${locked ? ' locked' : ''}${c.id === state.mainId ? ' current' : ''}` },
+    characterCanvas(c),
+    h('strong', { textContent: c.name }),
+    h('small', { textContent: locked ? '🔒 未解鎖' : c.member }),
+  );
+  el.style.setProperty('--c', c.color);
+  el.onclick = () => showDetail(c, locked);
+  return el;
 }
 
 function showDetail(c: Character, locked: boolean): void {

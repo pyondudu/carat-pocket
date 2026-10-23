@@ -2,7 +2,7 @@
 
 以 SEVENTEEN 官方角色 MINITEEN 為參考的像素電子雞網頁（PWA）。屬於粉絲二創，只在朋友之間非營利分享，不公開推廣。
 
-玩法：從 13 個角色裡選 1 個當主角來養，其他 12 個之後可以解鎖成夥伴；之後會加入拍照套相框、搖飲料小遊戲、商店與相簿。
+玩法：從 13 個角色裡選 1 個本命當主角來養，其他 12 個之後可以解鎖成夥伴；之後會加入拍照套相框、搖飲料小遊戲、商店與相簿。
 
 ## 開發
 
@@ -25,8 +25,9 @@ npm run build    # 型別檢查 + 打包到 dist/
 | `src/pet.ts` | 四項數值（飽足／心情／清潔／體力）、衰減、表情、動作 |
 | `src/data/characters.ts` | 13 個角色資料（成員、喜歡的食物、MBTI、專屬原料、解鎖價格） |
 | `src/draw.ts` | 角色繪製：有正式圖就用圖，沒有就用程式畫的 32×32 佔位圖 |
-| `public/sprites/<角色>/` | 正式角色圖：`happy`／`sad`／`sleep`／`shake`.png（目前只有 TAMTAM） |
-| `src/scenes/select.ts` | 選角畫面 |
+| `public/sprites/<角色>/` | 正式角色圖：`happy`／`sad`／`sleep`／`shake`.png（13 隻都有） |
+| `tools/` | 做角色圖的腳本：`sprites.py`（AI 生圖、後處理、搖飲料）、`face_edits.py`（從開心版改難過／睡覺） |
+| `src/scenes/select.ts` | 選角畫面（依 HIPHOP／VOCAL／PERFORMANCE 三個小分隊分組） |
 | `src/scenes/home.ts` | 寵物房間 |
 
 `參考資料/`（官方圖）與 `assets-src/`（生圖原檔）不進 git。
@@ -37,6 +38,6 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [ ] 2. 拍照 + 相框合成 + 相簿
 - [ ] 3. 搖飲料小遊戲 + 金幣 + 圖鑑
 - [ ] 4. 商店與解鎖
-- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（TAMTAM 四個表情已完成，其他 12 個待畫）
+- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色四個表情已完成；食物、房間等素材待做）
 - [ ] 6. PWA（manifest + service worker）
 - [ ] 7. 部署到免費 HTTPS 網址分享給朋友

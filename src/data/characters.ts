@@ -69,7 +69,7 @@ export const CHARACTERS: Character[] = [
     id: 'thepalee', name: 'THEpalee', nameKo: '디팔이', member: 'THE8', animal: '青蛙',
     shape: 'frog', color: '#9fcf6a', accent: '#ffffff',
     favoriteFood: '中國菜', mbti: 'IIFF', hobby: '畫畫、冥想、茶道',
-    ingredient: '綠茶', unlockCoins: 300,
+    ingredient: '抹茶', unlockCoins: 300,
   },
   {
     id: 'kimja', name: 'KIMJA', nameKo: '김자', member: 'MINGYU', animal: '馬鈴薯',
@@ -101,6 +101,13 @@ export const CHARACTERS: Character[] = [
     favoriteFood: '馬鈴薯排骨湯', mbti: 'INFJ', hobby: '運動',
     ingredient: '巧克力', unlockCoins: 300,
   },
+];
+
+/** 選角畫面依三個小分隊分組，隊長排第一個 */
+export const UNITS: { name: string; ids: string[] }[] = [
+  { name: 'HIPHOP TEAM', ids: ['choitcherry', 'foxdungee', 'kimja', 'nonver'] },
+  { name: 'VOCAL TEAM', ids: ['ppyopuli', 'jjongtoram', 'shuasum', 'doa', 'bboogyuli'] },
+  { name: 'PERFORMANCE TEAM', ids: ['tamtam', 'ocl', 'thepalee', 'chandalee'] },
 ];
 
 export function getCharacter(id: string): Character {

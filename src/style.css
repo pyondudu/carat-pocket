@@ -53,6 +53,10 @@ canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 .hint { margin: 0; color: var(--muted); font-size: 0.9rem; }
 
 /* 選角 */
+.unit { display: flex; flex-direction: column; gap: 10px; }
+.unit-row { display: flex; justify-content: center; gap: 10px; }
+.unit-row .tile { width: calc((100% - 20px) / 3); }
+.unit h2 { font-size: 0.85rem; letter-spacing: 0.08em; color: var(--muted); margin: 4px 0 0; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .tile {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -104,3 +108,4 @@ canvas.room {
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+.select .bar h1, .select .hint, .unit h2 { text-align: center; text-wrap: balance; }

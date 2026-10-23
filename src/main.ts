@@ -1,4 +1,5 @@
 import './style.css';
+import { loadSprites } from './draw';
 import { go, register } from './router';
 import { homeScene } from './scenes/home';
 import { selectScene } from './scenes/select';
@@ -18,8 +19,10 @@ function welcomeBack(): void {
   if (msg) modal(h('h2', { textContent: '你不在的時候…' }), h('p', { className: 'away', textContent: msg }));
 }
 
-welcomeBack();
-go(state.mainId ? 'home' : 'select');
+loadSprites().then(() => {
+  welcomeBack();
+  go(state.mainId ? 'home' : 'select');
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') save();

@@ -1,7 +1,10 @@
-// 角色繪製集中在這裡：目前用程式畫 32×32 像素佔位圖，之後換成 sprite sheet 只改 drawCharacter
+// 角色繪製集中在這裡：有 AI 生成的圖（public/sprites/<id>/）就用圖，沒有就用程式畫的 32×32 像素佔位圖
 
 import type { Character } from './data/characters';
 import type { Mood } from './pet';
+
+/** 角色姿勢：四種表情之外加上搖飲料 */
+export type Pose = Mood | 'shake';
 
 export const SPRITE = 32;
 const LINE = '#2b2b2b';
@@ -177,17 +180,65 @@ function spriteFor(c: Character, mood: Mood): HTMLCanvasElement {
   return cv;
 }
 
-/** 在 (x, y) 畫角色，scale 為整數倍率 */
-export function drawCharacter(ctx: Ctx, c: Character, mood: Mood, x: number, y: number, scale = 1): void {
+// ---- AI 生成的角色圖 ----
+
+/** 已經有正式圖的角色；每個角色資料夾放 happy/sad/sleep/shake 四張 */
+const SPRITE_IDS = ['tamtam'];
+const SPRITE_FILES: Record<Pose, string> = { happy: 'happy', sad: 'sad', sick: 'sad', sleep: 'sleep', shake: 'shake' };
+const images = new Map<string, HTMLImageElement>();
+
+/** 開始遊戲前先載入所有角色圖；載入失敗的就退回佔位圖 */
+export function loadSprites(): Promise<void> {
+  const jobs = SPRITE_IDS.flatMap((id) =>
+    [...new Set(Object.values(SPRITE_FILES))].map(
+      (file) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            images.set(`${id}:${file}`, img);
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = `${import.meta.env.BASE_URL}sprites/${id}/${file}.png`;
+        }),
+    ),
+  );
+  return Promise.all(jobs).then(() => undefined);
+}
+
+function imageFor(c: Character, pose: Pose): HTMLImageElement | undefined {
+  return images.get(`${c.id}:${SPRITE_FILES[pose]}`);
+}
+
+/** 畫角色：水平置中於 cx、腳底對齊 bottom、高度約 height 像素 */
+export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number): void {
+  const img = imageFor(c, pose);
+  if (img) {
+    // AI 圖解析度比畫面高，縮小時開平滑才不會破碎
+    const w = (img.width * height) / img.height;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, Math.round(cx - w / 2), Math.round(bottom - height), Math.round(w), Math.round(height));
+    return;
+  }
+  // 佔位圖：以整數倍放大，保持像素銳利
+  const scale = Math.max(1, Math.floor(height / SPRITE));
+  const size = SPRITE * scale;
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(spriteFor(c, mood), Math.round(x), Math.round(y), SPRITE * scale, SPRITE * scale);
+  ctx.drawImage(spriteFor(c, pose === 'shake' ? 'happy' : pose), Math.round(cx - size / 2), Math.round(bottom - size), size, size);
+}
+
+export function hasSprite(c: Character): boolean {
+  return imageFor(c, 'happy') !== undefined;
 }
 
 /** 建立一個顯示單一角色的小 canvas（選角格子、介紹視窗用） */
-export function characterCanvas(c: Character, mood: Mood = 'happy'): HTMLCanvasElement {
+export function characterCanvas(c: Character, pose: Pose = 'happy'): HTMLCanvasElement {
   const cv = document.createElement('canvas');
-  cv.width = cv.height = SPRITE;
-  cv.className = 'pixel';
-  drawCharacter(cv.getContext('2d')!, c, mood, 0, 0);
+  // 有正式圖時用較高解析度，佔位圖維持 32px 再由 CSS 放大
+  const size = hasSprite(c) ? 160 : SPRITE;
+  cv.width = cv.height = size;
+  cv.className = hasSprite(c) ? 'art' : 'pixel';
+  drawCharacter(cv.getContext('2d')!, c, pose, size / 2, size, size);
   return cv;
 }

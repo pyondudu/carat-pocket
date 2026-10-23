@@ -13,7 +13,7 @@ npm run build    # 型別檢查 + 打包到 dist/
 ```
 
 - 手機測試：同一個 Wi-Fi 開 `https://<電腦IP>:5173`。相機與搖晃感測需要 HTTPS，所以開發伺服器用 `@vitejs/plugin-basic-ssl`。
-- 測試用快轉：網址加 `?debug`，房間下方會出現「快轉 1／3／8 小時」與「重來」按鈕。
+- 測試用快轉：網址加 `?debug`（或 `#debug`），房間下方會出現「快轉 1／3／8 小時」與「重來」按鈕。
 
 ## 結構
 
@@ -24,7 +24,8 @@ npm run build    # 型別檢查 + 打包到 dist/
 | `src/state.ts` | 遊戲狀態、localStorage 存檔、「你不在的時候…」訊息 |
 | `src/pet.ts` | 四項數值（飽足／心情／清潔／體力）、衰減、表情、動作 |
 | `src/data/characters.ts` | 13 個角色資料（成員、喜歡的食物、MBTI、專屬原料、解鎖價格） |
-| `src/draw.ts` | 角色繪製；目前是程式畫的 32×32 佔位圖，之後換 sprite 只改這裡 |
+| `src/draw.ts` | 角色繪製：有正式圖就用圖，沒有就用程式畫的 32×32 佔位圖 |
+| `public/sprites/<角色>/` | 正式角色圖：`happy`／`sad`／`sleep`／`shake`.png（目前只有 TAMTAM） |
 | `src/scenes/select.ts` | 選角畫面 |
 | `src/scenes/home.ts` | 寵物房間 |
 
@@ -36,6 +37,6 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [ ] 2. 拍照 + 相框合成 + 相簿
 - [ ] 3. 搖飲料小遊戲 + 金幣 + 圖鑑
 - [ ] 4. 商店與解鎖
-- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖
+- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（TAMTAM 四個表情已完成，其他 12 個待畫）
 - [ ] 6. PWA（manifest + service worker）
 - [ ] 7. 部署到免費 HTTPS 網址分享給朋友

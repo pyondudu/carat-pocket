@@ -12,11 +12,13 @@ export interface GameState {
   pets: Record<string, PetState>; // 每個角色各自保存數值
   coins: number;
   food: number;
+  /** 自動補食物的累積進度（小時，0～1）；舊存檔沒有這個欄位 */
+  foodProgress?: number;
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 5, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -64,13 +66,30 @@ export function chooseMain(id: string): void {
   save();
 }
 
+/** 商店做好之前的暫時措施：每小時自動補 1 個食物，最多存到 10 個 */
+const FOOD_REGEN_CAP = 10;
+
+/** 經過 ms 毫秒：主角數值衰減＋自動補食物 */
+export function passTime(ms: number): void {
+  const pet = mainPet();
+  if (pet) applyElapsed(pet, ms);
+  if (state.food >= FOOD_REGEN_CAP) {
+    state.foodProgress = 0;
+    return;
+  }
+  const total = (state.foodProgress ?? 0) + ms / 3_600_000;
+  const gained = Math.floor(total);
+  state.food = Math.min(FOOD_REGEN_CAP, state.food + gained);
+  state.foodProgress = total - gained;
+}
+
 /** 把經過的時間套用到主角，回傳 [經過毫秒, 套用前數值] */
 export function catchUp(now = Date.now()): { elapsed: number; before: PetStats } | null {
   const pet = mainPet();
   if (!pet) return null;
   const elapsed = Math.max(0, now - state.lastSeen);
   const before = { ...pet.stats };
-  applyElapsed(pet, elapsed);
+  passTime(elapsed);
   state.lastSeen = now;
   return { elapsed, before };
 }

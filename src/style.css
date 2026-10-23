@@ -60,6 +60,7 @@ canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
   padding: 8px 4px;
 }
 .tile canvas { width: 64px; height: 64px; }
+canvas.art { image-rendering: auto; }
 .tile strong { font-size: 0.72rem; letter-spacing: 0.02em; word-break: break-all; }
 .tile small { font-size: 0.7rem; color: var(--muted); }
 .tile.locked { filter: grayscale(1); opacity: 0.6; }

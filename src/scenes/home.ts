@@ -1,13 +1,14 @@
 // 寵物房間：Canvas 畫房間與主角，DOM 放數值條與動作按鈕
 
 import { getCharacter } from '../data/characters';
-import { drawCharacter, SPRITE } from '../draw';
-import { applyElapsed, doAction, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
+import { drawCharacter, hasSprite } from '../draw';
+import { doAction, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
-import { mainPet, resetSave, save, state } from '../state';
+import { mainPet, passTime, resetSave, save, state } from '../state';
 import { h, toast } from '../ui';
 
-const ROOM = 64; // 房間畫布邊長（像素），CSS 放大顯示
+const ROOM = 64; // 房間以 64 格像素畫
+const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
 const TICK_MS = 5000;
 
 export function homeScene(): Scene {
@@ -19,7 +20,7 @@ export function homeScene(): Scene {
       const char = getCharacter(state.mainId!);
       const pet = mainPet()!;
 
-      const canvas = h('canvas', { className: 'pixel room', width: ROOM, height: ROOM });
+      const canvas = h('canvas', { className: 'pixel room', width: ROOM * ZOOM, height: ROOM * ZOOM });
       const ctx = canvas.getContext('2d')!;
       const coins = h('span');
       const food = h('span');
@@ -44,14 +45,14 @@ export function homeScene(): Scene {
 
       // 依存檔的 lastSeen 補算到現在，和回到 App 時的補算共用同一個起點，不會重複扣
       const tick = () => {
-        applyElapsed(pet, Date.now() - state.lastSeen);
+        passTime(Date.now() - state.lastSeen);
         save();
       };
 
       const act = (a: Action) => {
         tick();
         if (a === 'feed' && !pet.sleeping) {
-          if (state.food <= 0) return toast('沒有食物了（商店之後開放）');
+          if (state.food <= 0) return toast('沒有食物了，每小時會自動補 1 個');
           state.food--;
         }
         toast(doAction(pet, a));
@@ -69,9 +70,9 @@ export function homeScene(): Scene {
         sleepBtn,
       );
       const soon = (name: string) => () => toast(`${name}即將推出`);
-      // 網址加 ?debug 才出現：把 lastSeen 往前推，模擬離開幾小時
+      // 網址加 ?debug（或 #debug）才出現：把 lastSeen 往前推，模擬離開幾小時
       const debugTools = () => {
-        if (!new URLSearchParams(location.search).has('debug')) return null;
+        if (!new URLSearchParams(location.search).has('debug') && location.hash !== '#debug') return null;
         const skip = (hours: number) => () => {
           state.lastSeen -= hours * 3_600_000;
           tick();
@@ -116,13 +117,16 @@ export function homeScene(): Scene {
       );
       refresh();
 
+      const sprite = hasSprite(char);
       const draw = (t: number) => {
+        ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
         drawRoom(ctx);
         const mood = moodOf(pet);
         // 醒著時每 0.5 秒跳一下，睡覺時不動
         const bounce = mood === 'sleep' ? 0 : Math.floor(t / 500) % 2;
-        drawCharacter(ctx, char, mood, (ROOM - SPRITE) / 2, ROOM - SPRITE - 8 - bounce);
-        if (mood === 'sleep') drawZzz(ctx, t);
+        if (mood === 'sleep' && !sprite) drawZzz(ctx, t); // 正式圖的睡覺版自己有 Z
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, (ROOM - 7) * ZOOM - bounce * ZOOM, sprite ? 168 : 128);
         raf = requestAnimationFrame(draw);
       };
       raf = requestAnimationFrame(draw);

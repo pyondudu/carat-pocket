@@ -23,7 +23,7 @@ export const STAT_LABELS: Record<keyof PetStats, string> = {
 
 /** 每小時變化量 */
 const DECAY_PER_HOUR: PetStats = { hunger: -8, mood: -6, clean: -4, energy: -5 };
-const SLEEP_ENERGY_PER_HOUR = 15;
+const SLEEP_ENERGY_PER_HOUR = 50;
 
 export function newPet(): PetState {
   return { stats: { hunger: 80, mood: 80, clean: 80, energy: 80 }, sleeping: false };

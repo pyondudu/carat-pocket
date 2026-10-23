@@ -183,7 +183,10 @@ function spriteFor(c: Character, mood: Mood): HTMLCanvasElement {
 // ---- AI 生成的角色圖 ----
 
 /** 已經有正式圖的角色；每個角色資料夾放 happy/sad/sleep/shake 四張 */
-const SPRITE_IDS = ['tamtam'];
+const SPRITE_IDS = [
+  'choitcherry', 'jjongtoram', 'shuasum', 'ocl', 'tamtam', 'foxdungee', 'ppyopuli',
+  'thepalee', 'kimja', 'doa', 'bboogyuli', 'nonver', 'chandalee',
+];
 const SPRITE_FILES: Record<Pose, string> = { happy: 'happy', sad: 'sad', sick: 'sad', sleep: 'sleep', shake: 'shake' };
 const images = new Map<string, HTMLImageElement>();
 

@@ -12,7 +12,7 @@ npm run dev      # https://localhost:5173（自簽憑證，瀏覽器警告選「
 npm run build    # 型別檢查 + 打包到 dist/
 ```
 
-- 手機測試：同一個 Wi-Fi 開 `https://<電腦IP>:5173`。相機與搖晃感測需要 HTTPS，所以開發伺服器用 `@vitejs/plugin-basic-ssl`。
+- 手機測試：同一個 Wi-Fi 開 `https://<電腦IP>:5173`。相機需要 HTTPS，所以開發伺服器用 `@vitejs/plugin-basic-ssl`。
 - 測試用快轉：網址加 `?debug`（或 `#debug`），房間下方會出現「快轉 1／3／8 小時」與「重來」按鈕。
 
 ## 結構
@@ -36,8 +36,9 @@ npm run build    # 型別檢查 + 打包到 dist/
 
 - [x] 1. 專案骨架、角色資料、選角、寵物房間、存檔與離線補算
 - [ ] 2. 拍照 + 相框合成 + 相簿
-- [ ] 3. 搖飲料小遊戲 + 金幣 + 圖鑑
+- [ ] 3. 搖飲料小遊戲（連點「搖！」按鈕，不用搖晃感測）+ 金幣 + 圖鑑
 - [ ] 4. 商店與解鎖
 - [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色四個表情已完成；食物、房間等素材待做）
 - [ ] 6. PWA（manifest + service worker）
 - [ ] 7. 部署到免費 HTTPS 網址分享給朋友
+- [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.16（已決定，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒

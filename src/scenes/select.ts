@@ -13,12 +13,12 @@ export function selectScene(): Scene {
       const header = h(
         'header',
         { className: 'bar' },
-        !firstTime && h('button', { className: 'ghost', textContent: '← 返回', onclick: () => go('home') }),
+        h('button', { className: 'ghost', textContent: '← 返回', onclick: () => go(firstTime ? 'intro' : 'home') }),
         h('h1', { textContent: firstTime ? '選擇自己的本命吧！' : '換主角' }),
       );
       const hint = h('p', {
         className: 'hint',
-        textContent: firstTime ? '選中的角色會成為主角，其他 12 個之後可以慢慢解鎖。' : '只能選已經解鎖的角色，數值各自保存。',
+        textContent: firstTime ? '選中的角色會成為你的本命，其他 12 隻可以在商店解鎖成夥伴。' : '只能選已經解鎖的角色，數值各自保存。',
       });
       const units = UNITS.map((u) => {
         // 4 人排成 2×2，5 人排成上 2 下 3，每排置中

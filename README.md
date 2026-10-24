@@ -12,6 +12,7 @@ npm run dev      # https://localhost:5173（自簽憑證，瀏覽器警告選「
 npm run build    # 型別檢查 + 打包到 dist/
 ```
 
+- 正式網址（給朋友玩）：https://pyondudu.github.io/carat-pocket/ ，push 到 main 會由 `.github/workflows/deploy.yml` 自動部署到 GitHub Pages。
 - 手機測試：同一個 Wi-Fi 開 `https://<電腦IP>:5173`。相機需要 HTTPS，所以開發伺服器用 `@vitejs/plugin-basic-ssl`。
 - 測試用按鈕：網址加 `?debug`（或 `#debug`），房間下方會出現「快轉 1／3／8 小時」「弄髒」「+500 金幣」「全部解鎖」「重來」。
 
@@ -21,6 +22,7 @@ npm run build    # 型別檢查 + 打包到 dist/
 | --- | --- |
 | `src/main.ts` | 進入點、回到 App 時的離線補算 |
 | `src/router.ts` | 畫面切換 |
+| `src/scenes/intro.ts` | 開頭說明（第一次打開時出現，按「開始遊戲」進選本命；房間的「？」也顯示這份玩法） |
 | `src/state.ts` | 遊戲狀態、localStorage 存檔、「你不在的時候…」訊息 |
 | `src/pet.ts` | 四項數值（飽足／心情／清潔／體力）、衰減、表情、動作 |
 | `src/data/characters.ts` | 13 個角色資料（成員、喜歡的食物、MBTI、專屬原料、解鎖價格） |

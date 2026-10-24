@@ -7,6 +7,7 @@ import { doAction, feedSpecial, moodOf, STAT_LABELS, type Action, type PetStats 
 import { go, type Scene } from '../router';
 import { GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
 import { h, modal, toast } from '../ui';
+import { howToPlay } from './intro';
 
 export const ROOM = 64; // 房間以 64 格像素畫
 export const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
@@ -232,6 +233,7 @@ export function homeScene(): Scene {
             'header',
             { className: 'bar' },
             h('h1', { textContent: char.name }),
+            h('button', { className: 'ghost help', textContent: '？', title: '玩法說明', onclick: () => modal(h('h2', { textContent: '怎麼玩' }), howToPlay()) }),
             h('div', { className: 'wallet' }, coins, food),
           ),
           canvas,

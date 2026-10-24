@@ -2,6 +2,7 @@ import './style.css';
 import { loadSprites } from './draw';
 import { go, register } from './router';
 import { homeScene } from './scenes/home';
+import { introScene } from './scenes/intro';
 import { selectScene } from './scenes/select';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
@@ -10,6 +11,7 @@ import { awayMessage, catchUp, mainPet, save, state } from './state';
 import { getCharacter } from './data/characters';
 import { h, modal, toast } from './ui';
 
+register('intro', introScene);
 register('select', selectScene);
 register('home', homeScene);
 register('sheet', sheetScene);
@@ -31,7 +33,7 @@ loadSprites().then(() => {
   // #sheet：角色總表，檢查表情與比例用
   if (location.hash === '#sheet') return go('sheet');
   welcomeBack();
-  go(state.mainId ? 'home' : 'select');
+  go(state.mainId ? 'home' : 'intro');
 });
 
 document.addEventListener('visibilitychange', () => {

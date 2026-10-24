@@ -104,6 +104,7 @@ canvas.room {
 .fill { height: 100%; background: #8fd18f; transition: width 0.3s; }
 .fill.low { background: #f08a8a; }
 .guest-bar { width: 100%; font-size: 0.9rem; padding: 8px; background: #fff3d6; }
+.guest-bar.off { background: #eceaee; color: var(--muted); }
 .actions, .nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .actions button, .nav button { font-size: 0.85rem; padding: 10px 2px; }
 .nav button { background: #eef2fb; }

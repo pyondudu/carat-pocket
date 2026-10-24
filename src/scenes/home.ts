@@ -48,7 +48,11 @@ export function homeScene(): Scene {
         const g = state.guest;
         guestBtn.textContent = g
           ? `🏠 ${getCharacter(g.id).name} 作客中・還有 ${Math.max(1, Math.ceil((g.until - Date.now()) / 60_000))} 分鐘`
-          : `🏠 邀請夥伴來玩（${INVITE_PRICE} 🪙）`;
+          : pet.sleeping
+            ? `🌙 ${char.name} 睡覺中，起床才能邀請夥伴`
+            : `🏠 邀請夥伴來玩（${INVITE_PRICE} 🪙）`;
+        // 睡覺時不能邀請：按鈕看起來停用（還是可以點，點了會提示）
+        guestBtn.classList.toggle('off', !g && pet.sleeping);
       };
 
       // 依存檔的 lastSeen 補算到現在，和回到 App 時的補算共用同一個起點，不會重複扣
@@ -162,7 +166,14 @@ export function homeScene(): Scene {
       };
       const guestBtn = h('button', { className: 'guest-bar', onclick: inviteMenu });
 
-      const sleepBtn = h('button', { onclick: () => act('sleep') });
+      // 朋友在的時候不能睡覺（睡覺和作客不能同時發生），起床則隨時可以
+      const sleepBtn = h('button', {
+        onclick: () => {
+          if (!pet.sleeping && state.guest) return toast(`${getCharacter(state.guest.id).name} 還在作客，先請他回家再睡吧`);
+          act('sleep');
+          refresh();
+        },
+      });
       const actions = h(
         'div',
         { className: 'actions' },

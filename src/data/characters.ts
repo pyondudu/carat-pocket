@@ -22,7 +22,7 @@ export interface Character {
   /** 本命專屬的特殊食物（商店只賣本命的） */
   specialFood: string;
   unlockCoins: number;
-  /** 官方娃娃的實際高度（公分，使用者 2026-10-24 量的；CHOITCHERRY、BBOOGYULI、CHANDALEE 是照圖估的），兩隻同框時照這個比例畫 */
+  /** 官方娃娃的實際高度（公分，使用者 2026-10-24 量的），兩隻同框時照這個比例畫 */
   heightCm: number;
 }
 
@@ -31,7 +31,7 @@ export const CHARACTERS: Character[] = [
     id: 'choitcherry', name: 'CHOITCHERRY', nameKo: '쵯체리', member: 'S.COUPS', animal: '兔子',
     shape: 'longEars', color: '#f4f2ef', accent: '#b0263a',
     favoriteFood: '生拌牛肉、香煎鮭魚排', mbti: 'ISFJ', hobby: '躺著一整天',
-    ingredient: '櫻桃', specialFood: '烤豬頸肉', unlockCoins: 400, heightCm: 31,
+    ingredient: '櫻桃', specialFood: '烤豬頸肉', unlockCoins: 400, heightCm: 32,
   },
   {
     id: 'jjongtoram', name: 'JJONGTORAM', nameKo: '쫑토람', member: 'JEONGHAN', animal: '天使兔裝寶寶',
@@ -103,7 +103,7 @@ export const CHARACTERS: Character[] = [
     id: 'chandalee', name: 'CHANDALEE', nameKo: '찬달이', member: 'DINO', animal: '水獺',
     shape: 'roundEars', color: '#d4a582', accent: '#ffffff',
     favoriteFood: '馬鈴薯排骨湯', mbti: 'INFJ', hobby: '運動',
-    ingredient: '海鹽', specialFood: '奶奶醬蟹', unlockCoins: 400, heightCm: 21,
+    ingredient: '海鹽', specialFood: '奶奶醬蟹', unlockCoins: 400, heightCm: 22,
   },
 ];
 

@@ -1,6 +1,9 @@
-// 角色繪製集中在這裡：有 AI 生成的圖（public/sprites/<id>/）就用圖，沒有就用程式畫的 32×32 像素佔位圖
+// 角色繪製集中在這裡：有無五官底圖就畫底圖＋程式畫的五官（src/face.ts），
+// 其次用 AI 生成的各表情圖（public/sprites/<id>/），都沒有就用程式畫的 32×32 像素佔位圖
 
 import type { Character } from './data/characters';
+import faces from './data/faces.json';
+import { drawFace, drawZzz, EXPRESSIONS, type FaceRig } from './face';
 import type { Mood } from './pet';
 
 /** 角色姿勢：四種表情之外加上搖飲料 */
@@ -187,13 +190,16 @@ const SPRITE_IDS = [
   'choitcherry', 'jjongtoram', 'shuasum', 'ocl', 'tamtam', 'foxdungee', 'ppyopuli',
   'thepalee', 'kimja', 'doa', 'bboogyuli', 'nonver', 'chandalee',
 ];
-const SPRITE_FILES: Record<Pose, string> = { happy: 'happy', sad: 'sad', sick: 'sad', sleep: 'sleep', shake: 'shake' };
+// 生病版目前只有 O.C.L 有（其他角色用程式五官），沒有的就借難過版
+const SPRITE_FILES: Record<Pose, string> = { happy: 'happy', sad: 'sad', sick: 'sick', sleep: 'sleep', shake: 'shake' };
 const images = new Map<string, HTMLImageElement>();
+const RIGS = faces as unknown as Record<string, FaceRig>; // JSON 由 tools/face_rig.py 產生
 
 /** 開始遊戲前先載入所有角色圖；載入失敗的就退回佔位圖 */
 export function loadSprites(): Promise<void> {
   const jobs = SPRITE_IDS.flatMap((id) =>
-    [...new Set(Object.values(SPRITE_FILES))].map(
+    // 有程式五官的角色不需要生病版，改載無五官底圖
+    [...new Set(Object.values(SPRITE_FILES))].map((f) => (RIGS[id] && f === 'sick' ? 'base' : f)).map(
       (file) =>
         new Promise<void>((resolve) => {
           const img = new Image();
@@ -210,11 +216,93 @@ export function loadSprites(): Promise<void> {
 }
 
 function imageFor(c: Character, pose: Pose): HTMLImageElement | undefined {
-  return images.get(`${c.id}:${SPRITE_FILES[pose]}`);
+  return images.get(`${c.id}:${SPRITE_FILES[pose]}`) ?? (pose === 'sick' ? images.get(`${c.id}:sad`) : undefined);
 }
 
-/** 畫角色：水平置中於 cx、腳底對齊 bottom、高度約 height 像素 */
-export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number): void {
+/** 底圖＋五官合成一張，依表情與是否眨眼快取 */
+const composed = new Map<string, HTMLCanvasElement>();
+
+function composeFace(c: Character, base: HTMLImageElement, happy: HTMLImageElement, rig: FaceRig, mood: Mood, blink: boolean): HTMLCanvasElement {
+  const key = `${c.id}:${mood}:${blink}`;
+  let cv = composed.get(key);
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = base.width;
+    cv.height = base.height;
+    const g = cv.getContext('2d')!;
+    g.drawImage(base, 0, 0);
+    drawFace(g, rig, happy, EXPRESSIONS[mood], blink);
+    composed.set(key, cv);
+  }
+  return cv;
+}
+
+/** 動畫用的時間：t＝現在（毫秒，performance.now()），hopAt＝最近一次互動的時間 */
+export interface Motion {
+  t: number;
+  hopAt?: number;
+}
+
+const HOP_MS = 800;
+
+/** 互動時跳一下：預備（壓扁）→ 執行（拉長跳起）→ 反應（落地壓扁再回彈）；回傳縮放與往上的位移（身高的比例） */
+function hop(ms: number): { sx: number; sy: number; up: number } {
+  const ease = (a: number, b: number, p: number) => a + (b - a) * Math.sin((p * Math.PI) / 2);
+  if (ms < 0 || ms >= HOP_MS) return { sx: 1, sy: 1, up: 0 };
+  if (ms < 150) {
+    const p = ms / 150;
+    return { sx: ease(1, 1.12, p), sy: ease(1, 0.86, p), up: 0 };
+  }
+  if (ms < 470) {
+    const p = (ms - 150) / 320;
+    return { sx: 0.94, sy: 1.08, up: 0.16 * Math.sin(p * Math.PI) };
+  }
+  if (ms < 600) {
+    const p = (ms - 470) / 130;
+    return { sx: ease(1.1, 1.04, p), sy: ease(0.9, 0.97, p), up: 0 };
+  }
+  const p = (ms - 600) / (HOP_MS - 600);
+  return { sx: ease(1.04, 1, p), sy: ease(0.97, 1, p), up: 0 };
+}
+
+/** 每 4 秒一個區間，在區間裡隨機的時間點眨眼 0.14 秒 */
+function blinking(t: number): boolean {
+  const n = Math.floor(t / 4000);
+  const at = ((Math.sin(n * 12.9898) * 43758.5453) % 1 + 1) % 1; // 固定的偽亂數
+  const ms = t - n * 4000 - 500 - at * 3000;
+  return ms >= 0 && ms < 140;
+}
+
+export function isHopping(m: Motion): boolean {
+  return m.hopAt !== undefined && m.t - m.hopAt < HOP_MS;
+}
+
+/** 畫角色：水平置中於 cx、腳底對齊 bottom、高度約 height 像素；有 motion 時會呼吸、眨眼、跳 */
+export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number, motion?: Motion): void {
+  const rig = RIGS[c.id];
+  const base = rig && images.get(`${c.id}:base`);
+  const happy = images.get(`${c.id}:happy`);
+  if (rig && base && happy && pose !== 'shake') {
+    const t = motion?.t ?? 0;
+    const sleeping = pose === 'sleep';
+    // 呼吸：以腳底為中心，高度和寬度反向小幅變化，睡覺時慢一點
+    const b = motion ? Math.sin((t / (sleeping ? 4500 : 3000)) * 2 * Math.PI) : 0;
+    const j = motion?.hopAt !== undefined ? hop(t - motion.hopAt) : hop(-1);
+    const sy = (1 + 0.02 * b) * j.sy;
+    const sx = (1 - 0.012 * b) * j.sx;
+    const k = height / base.height;
+    const img = composeFace(c, base, happy, rig, pose, !!motion && !sleeping && blinking(t));
+    ctx.save();
+    ctx.translate(cx, bottom - j.up * height);
+    ctx.scale(k * sx, k * sy);
+    ctx.translate(-base.width / 2, -base.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0);
+    if (sleeping && motion) drawZzz(ctx, rig, t);
+    ctx.restore();
+    return;
+  }
   const img = imageFor(c, pose);
   if (img) {
     // AI 圖解析度比畫面高，縮小時開平滑才不會破碎
@@ -233,6 +321,11 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
 
 export function hasSprite(c: Character): boolean {
   return imageFor(c, 'happy') !== undefined;
+}
+
+/** 有底圖＋程式五官的角色：會自己呼吸、睡覺時自己畫 Z */
+export function hasRig(c: Character): boolean {
+  return !!RIGS[c.id] && images.has(`${c.id}:base`);
 }
 
 /** 建立一個顯示單一角色的小 canvas（選角格子、介紹視窗用） */

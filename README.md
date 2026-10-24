@@ -24,9 +24,11 @@ npm run build    # 型別檢查 + 打包到 dist/
 | `src/state.ts` | 遊戲狀態、localStorage 存檔、「你不在的時候…」訊息 |
 | `src/pet.ts` | 四項數值（飽足／心情／清潔／體力）、衰減、表情、動作 |
 | `src/data/characters.ts` | 13 個角色資料（成員、喜歡的食物、MBTI、專屬原料、解鎖價格） |
-| `src/draw.ts` | 角色繪製：有正式圖就用圖，沒有就用程式畫的 32×32 佔位圖 |
-| `public/sprites/<角色>/` | 正式角色圖：`happy`／`sad`／`sleep`／`shake`.png（13 隻都有） |
-| `tools/` | 做角色圖的腳本：`sprites.py`（AI 生圖、後處理、搖飲料）、`face_edits.py`（從開心版改難過／睡覺） |
+| `src/draw.ts` | 角色繪製：有無五官底圖就畫底圖＋程式五官（會呼吸、眨眼、互動時跳），其次用各表情圖，都沒有就用 32×32 佔位圖 |
+| `src/face.ts`、`src/data/faces.json` | 程式畫的五官（表情＝參數）與每隻的五官位置（`tools/face_rig.py` 產生） |
+| `src/scenes/sheet.ts` | 角色總表（網址加 `#sheet`），檢查 13 隻 × 表情有沒有跑掉 |
+| `public/sprites/<角色>/` | 正式角色圖：`happy`／`sad`／`sleep`／`shake`.png（13 隻都有）、`base.png` 無五官底圖（O.C.L 以外 12 隻）、O.C.L 另有 `sick.png` |
+| `tools/` | 做角色圖的腳本：`sprites.py`（AI 生圖、後處理、搖飲料）、`face_edits.py`（從開心版改難過／睡覺）、`face_rig.py`（無五官底圖＋五官位置） |
 | `src/scenes/select.ts` | 選角畫面（依 HIPHOP／VOCAL／PERFORMANCE 三個小分隊分組） |
 | `src/scenes/home.ts` | 寵物房間 |
 
@@ -38,7 +40,7 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [ ] 2. 拍照 + 相框合成 + 相簿
 - [ ] 3. 搖飲料小遊戲（連點「搖！」按鈕，不用搖晃感測）+ 金幣 + 圖鑑
 - [ ] 4. 商店與解鎖
-- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色四個表情已完成；食物、房間等素材待做）
+- [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色表情已完成，O.C.L 以外改為底圖＋程式五官，會呼吸、眨眼、互動時跳；食物、房間等素材待做）
 - [ ] 6. PWA（manifest + service worker）
 - [ ] 7. 部署到免費 HTTPS 網址分享給朋友
 - [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.16（已決定，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒

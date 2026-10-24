@@ -1,7 +1,7 @@
 // 寵物房間：Canvas 畫房間與主角，DOM 放數值條與動作按鈕
 
 import { getCharacter } from '../data/characters';
-import { drawCharacter, hasSprite } from '../draw';
+import { drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
 import { doAction, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { mainPet, passTime, resetSave, save, state } from '../state';
@@ -14,6 +14,7 @@ const TICK_MS = 5000;
 export function homeScene(): Scene {
   let raf = 0;
   let timer = 0;
+  let hopAt: number | undefined; // 最近一次互動的時間，角色會跳一下
 
   return {
     mount(root) {
@@ -56,6 +57,7 @@ export function homeScene(): Scene {
           state.food--;
         }
         toast(doAction(pet, a));
+        if (a !== 'sleep' && !pet.sleeping) hopAt = performance.now();
         save();
         refresh();
       };
@@ -118,15 +120,18 @@ export function homeScene(): Scene {
       refresh();
 
       const sprite = hasSprite(char);
+      const rig = hasRig(char);
       const draw = (t: number) => {
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
         drawRoom(ctx);
-        const mood = moodOf(pet);
-        // 醒著時每 0.5 秒跳一下，睡覺時不動
-        const bounce = mood === 'sleep' ? 0 : Math.floor(t / 500) % 2;
+        const motion: Motion = { t, hopAt };
+        // 跳起來的時候（互動的反應）一律開心
+        const mood = isHopping(motion) ? 'happy' : moodOf(pet);
+        // 有程式五官的角色自己會呼吸；其他的醒著時每 0.5 秒跳一下，睡覺時不動
+        const bounce = rig || mood === 'sleep' ? 0 : Math.floor(t / 500) % 2;
         if (mood === 'sleep' && !sprite) drawZzz(ctx, t); // 正式圖的睡覺版自己有 Z
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, (ROOM - 7) * ZOOM - bounce * ZOOM, sprite ? 168 : 128);
+        drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, (ROOM - 7) * ZOOM - bounce * ZOOM, sprite ? 168 : 128, motion);
         raf = requestAnimationFrame(draw);
       };
       raf = requestAnimationFrame(draw);

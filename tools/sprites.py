@@ -33,7 +33,7 @@ FROM_HAPPY = {("choitcherry", "sad"), ("choitcherry", "sleep"), ("shuasum", "sad
               ("thepalee", "sad"), ("foxdungee", "sleep"), ("ppyopuli", "sleep"), ("ppyopuli", "sad"), ("nonver", "sad"), ("nonver", "sleep"),
               ("chandalee", "sad"), ("chandalee", "sleep"),
               ("thepalee", "sleep"), ("foxdungee", "sad"), ("kimja", "sad"), ("doa", "sad"), ("kimja", "sleep"), ("doa", "sleep"),
-             ("jjongtoram", "sad"), ("jjongtoram", "sleep"), ("bboogyuli", "sad"), ("bboogyuli", "sleep")}  # 從開心版改出來的，不再校色
+             ("ocl", "sick"), ("jjongtoram", "sad"), ("jjongtoram", "sleep"), ("bboogyuli", "sad"), ("bboogyuli", "sleep")}  # 從開心版改出來的，不再校色
 SHORT_BODY = {}  # 開心版手動縮過身體、其他表情又是 AI 畫的角色：其他表情也縮（寬、高比例）
 NO_OFFICIAL_COLOR = {"tamtam", "kimja"}  # 不對照官方圖校色（TAMTAM 已核准；KIMJA 校了會變灰）
 
@@ -302,8 +302,9 @@ def shorten_body(im, sx, sy):
     return out
 
 
-def process(cid):
-    raws = {p: os.path.join(RAW_DIR, f"{cid}_{p}.png") for p in POSES}
+def process(cid, only=None):
+    """only：只輸出這幾個表情（其他表情仍會讀進來，縮放比例才跟開心版一致）"""
+    raws = {p: os.path.join(RAW_DIR, f"{cid}_{p}.png") for p in POSES + ["sick", "base"]}
     raws = {p: f for p, f in raws.items() if os.path.isfile(f)}
     if "happy" not in raws:
         sys.exit(f"{cid} 還沒有開心版")
@@ -314,7 +315,7 @@ def process(cid):
     white = lightest(images["happy"])
     if white:
         for pose in images:
-            if pose != "happy" and (cid, pose) not in FROM_HAPPY:
+            if pose not in ("happy", "base") and (cid, pose) not in FROM_HAPPY:
                 white_balance(images[pose], white)
     target = body_mean(images["happy"])
     # AI 畫的顏色常偏深、偏飽和，開心版再以官方全身圖的主色校正
@@ -324,14 +325,14 @@ def process(cid):
         if ref_mean and target:
             target = [t * min(1.25, max(0.8, r / t)) for t, r in zip(target, ref_mean)]
     happy_mean = body_mean(images["happy"])  # 迴圈裡開心版會先被校色，要在那之前記下來
-    scale = None
+    scale = layout = None
     os.makedirs(os.path.join(OUT_DIR, cid), exist_ok=True)
-    for pose in POSES:
+    for pose in POSES + ["sick", "base"]:
         if pose not in images:
             continue
         im = images[pose]
         px = im.load()
-        mean = body_mean(im) if (cid, pose) not in FROM_HAPPY else happy_mean
+        mean = body_mean(im) if pose != "base" and (cid, pose) not in FROM_HAPPY else happy_mean
         gain = [t / m if m else 1 for t, m in zip(target, mean)] if mean else [1, 1, 1]
         main_hue, main_sat = dominant_color(im)
         mask = Image.new("L", im.size, 0)
@@ -358,9 +359,14 @@ def process(cid):
             k = min(CANVAS[0] / s.width, (CANVAS[1] - 4) / s.height)
             s = s.resize((round(s.width * k), round(s.height * k)), Image.LANCZOS)
         canvas = Image.new("RGBA", CANVAS)
-        canvas.paste(s, ((CANVAS[0] - s.width) // 2, CANVAS[1] - s.height - 4), s)
-        canvas.save(os.path.join(OUT_DIR, cid, f"{pose}.png"))
-    print(f"{cid}：輸出 {', '.join(p for p in POSES if p in images)}")
+        pos = ((CANVAS[0] - s.width) // 2, CANVAS[1] - s.height - 4)
+        canvas.paste(s, pos, s)
+        if pose == "happy":  # 原圖座標 → 輸出圖座標，給 tools/face_rig.py 換算五官位置
+            layout = {"x0": full[0], "y0": full[1], "scale": s.width / c.width, "dx": pos[0], "dy": pos[1]}
+        if only is None or pose in only:
+            canvas.save(os.path.join(OUT_DIR, cid, f"{pose}.png"))
+    print(f"{cid}：輸出 {', '.join(p for p in POSES + ['sick', 'base'] if p in images and (only is None or p in only))}")
+    return layout
 
 
 # 雪克杯像素圖：K 深灰鈕、C 淺灰蓋、B 深灰濾網環、S 銀色杯身、H 反光

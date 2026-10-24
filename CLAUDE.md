@@ -10,6 +10,7 @@
 - 角色圖流程（TAMTAM 試出來的）：`--ref` 官方圖（從介紹頁裁出，`assets-src/ref/`）＋已核准的開心版；中畫質、`-b transparent`、一次一個表情、提示詞逐項寫外型、no props。後處理：毛色以開心版校色、四張同一縮放比例、底部對齊 300×280 畫布。不要硬轉真像素格（AI 的格子不規則，會鋸齒）。詳細紀錄在總計畫檔。
 - 新增角色圖：放進 `public/sprites/<id>/`，並把 id 加進 `src/draw.ts` 的 `SPRITE_IDS`（13 隻都已加入）。
 - 其他表情一律從核准的開心版做，免費且比例不會跑：難過／睡覺用 `tools/face_edits.py`（清掉五官再畫新的，座標是 1024 原圖；取色點寫 `None` 會用左右膚色漸變填），搖飲料用 `tools/sprites.py shake`（開心版＋程式畫的雪克杯）。改完都要跑 `tools/sprites.py process <id>`；從開心版改的表情要加進 `FROM_HAPPY`，才不會重複校色。O.C.L、TAMTAM 的難過／睡覺是使用者核准的 AI 版，不要重做。
+- 程式五官（使用者 2026-10-24 試過 TAMTAM 後決定採用；O.C.L 以外 12 隻已完成）：`tools/face_rig.py` 的 `RIGS` 寫眼睛、嘴巴的清除範圍（1024 原圖座標），跑完產生 `public/sprites/<id>/base.png` 和 `src/data/faces.json`。開心時遊戲直接從 happy.png 複製原本的眼睛嘴巴（角色招牌的眼睛不會被換掉），其他表情在 `src/face.ts` 的 `EXPRESSIONS` 改參數，不用再生圖。O.C.L 是三隻疊在一起、難過／睡覺是核准的 AI 版，維持用 PNG；牠的生病版 `sick.png` 是 `face_edits.py` 從開心版改的（沒有 sick.png 的角色會借用 sad.png）。用 `#sheet` 總表檢查。
 - 看總表不要把 PNG 壓成 256 色，顏色會跑掉（葉子變褐色）。
 - 手機試玩：VM 的網路手機連不到，改用私人 Artifact（https://claude.ai/artifact/9GoFNK4eWXnMP7Tpdreu7x）。做法：`npm run build` 後把 dist 的 css/js 內嵌成單一 HTML，`public/sprites/` 用 Artifact 的 `files` 附上。Artifact 網址不能帶 query，所以快轉用 `#debug`。
 - 食物每小時自動補 1 個（上限 10）是商店完成前的暫時措施，做商店時要拿掉（`src/state.ts` 的 `passTime`）。

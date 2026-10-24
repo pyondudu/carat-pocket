@@ -109,3 +109,9 @@ canvas.room {
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .select .bar h1, .select .hint, .unit h2 { text-align: center; text-wrap: balance; }
+
+.sheet { border-collapse: collapse; font-size: 0.72rem; }
+.sheet th { font-weight: 700; color: var(--muted); padding: 2px 4px; }
+.sheet tr > th:first-child { text-align: right; white-space: nowrap; font-size: 0.62rem; }
+.sheet td { padding: 0; }
+.sheet canvas { width: 96px; max-width: 15vw; height: auto; display: block; }

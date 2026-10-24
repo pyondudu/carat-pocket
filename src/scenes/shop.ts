@@ -48,7 +48,7 @@ export function shopScene(): Scene {
           refresh();
           toast('買了 1 個紫菜飯糰');
         }),
-        item('⭐', main.specialFood, `${main.name} 最喜歡的！飽足 +40、心情 +30`, SPECIAL_FOOD_PRICE, owned.special, () => {
+        item(main.specialIcon, main.specialFood, `${main.name} 最喜歡的！飽足 +40、心情 +30`, SPECIAL_FOOD_PRICE, owned.special, () => {
           if (!pay(SPECIAL_FOOD_PRICE)) return;
           state.specialFood++;
           save();

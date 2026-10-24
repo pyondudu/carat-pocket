@@ -38,7 +38,7 @@ export function homeScene(): Scene {
 
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
-        food.textContent = `🍙 ${state.food}${state.specialFood ? ` ⭐ ${state.specialFood}` : ''}`;
+        food.textContent = `🍙 ${state.food}${state.specialFood ? ` ${char.specialIcon} ${state.specialFood}` : ''}`;
         for (const [k, fill] of bars) {
           const v = pet.stats[k];
           fill.style.width = `${v}%`;
@@ -96,7 +96,7 @@ export function homeScene(): Scene {
               state.food--;
               return doAction(pet, 'feed');
             }),
-            option(`⭐ ${char.specialFood}`, state.specialFood, '飽足 +40、心情 +30', () => {
+            option(`${char.specialIcon} ${char.specialFood}`, state.specialFood, '飽足 +40、心情 +30', () => {
               state.specialFood--;
               feedSpecial(pet);
               return `${char.specialFood}！最喜歡了！`;

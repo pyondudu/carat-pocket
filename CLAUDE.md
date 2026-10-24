@@ -16,7 +16,7 @@
 - 看總表不要把 PNG 壓成 256 色，顏色會跑掉（葉子變褐色）。
 - 手機試玩：VM 的網路手機連不到，改用私人 Artifact（https://claude.ai/artifact/9GoFNK4eWXnMP7Tpdreu7x）。做法：`npm run build` 後把 dist 的 css/js 內嵌成單一 HTML，`public/sprites/` 用 Artifact 的 `files` 附上。Artifact 網址不能帶 query，所以快轉用 `#debug`。
 - 搖飲料（2026-10-24 使用者定案）：基本原料牛奶、紅茶、綠茶、冰塊、果糖；每隻角色一種專屬原料（`characters.ts` 的 `ingredient`，使用者指定），解鎖夥伴才拿得到；19 款飲料的名稱與配方是使用者改過的，改之前先問。規則在 `src/shake.ts`，存檔版本 2 加了 `codex`。
-- 商店（2026-10-24 使用者定案）：養成只有一開始選的本命，不能換主角；解鎖夥伴（500）只拿到牠的專屬原料。商店只賣本命的特殊食物（`characters.ts` 的 `specialFood`，名稱使用者改過，改之前先問）。自動補食物使用者決定保留，但改成每 4 小時 1 個、最多 3 個（`src/state.ts` 的 `passTime`）。存檔版本 3 加了 `specialFood`。
+- 商店（2026-10-24 使用者定案）：養成只有一開始選的本命，不能換主角；解鎖夥伴（每隻 400，原本 500，使用者覺得門檻太高調降）可以邀請作客並拿到牠的專屬原料。商店只賣本命的特殊食物（`characters.ts` 的 `specialFood`，名稱使用者改過，改之前先問）。自動補食物使用者決定保留，但改成每 4 小時 1 個、最多 3 個（`src/state.ts` 的 `passTime`）。存檔版本 3 加了 `specialFood`。
 - 邀請作客（2026-10-24 使用者定案）：從已解鎖夥伴選 1 隻，要花金幣（`src/data/shop.ts` 的 `INVITE_PRICE`，暫定 50；使用者說不能免費，不然不會去賺金幣），待 `GUEST_HOURS`＝2 小時、沒有冷卻。客人和本命一樣大、一起縮小並排；客人在時本命心情衰減減半（`passTime` 依 `guest.until` 切成兩段）。存檔版本 4 加了 `guest`。搖飲料只有本命、不放窗戶（`drawRoom(ctx, false)`）。
 - 房間背景（`home.ts` 的 `drawRoom`）：左上角電子鐘（真實時間、24 小時制，不可擋角色）、窗戶（白天／傍晚／晚上天色跟時間）、地上垃圾跟清潔值。房間 nav 是搖飲料、商店、待推出、待推出；後兩格原本是拍照、相簿，使用者要先擱置、之後再決定。
 - 給朋友玩：GitHub Pages（https://pyondudu.github.io/carat-pocket/），repo 公開，push 到 main 自動部署。所以 `public/` 和 git 裡的東西都會公開，不能放官方原圖或金鑰。開頭說明在 `src/scenes/intro.ts`（還沒選本命時出現）。

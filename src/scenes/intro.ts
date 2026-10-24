@@ -1,7 +1,5 @@
 // 開頭說明：第一次打開（還沒選本命）時出現，按「開始遊戲」進入選本命；房間的「？」也會顯示同一份說明
 
-import { CHARACTERS } from '../data/characters';
-import { characterCanvas } from '../draw';
 import { go, type Scene } from '../router';
 import { h } from '../ui';
 
@@ -23,15 +21,13 @@ export function howToPlay(): HTMLElement {
 export function introScene(): Scene {
   return {
     mount(root) {
-      // 隨機排幾隻角色當封面
-      const cover = [...CHARACTERS].sort(() => Math.random() - 0.5).slice(0, 3);
       root.append(
         h(
           'div',
           { className: 'screen intro' },
           h('h1', { className: 'intro-title', textContent: 'Carat Pocket' }),
           h('p', { className: 'hint', textContent: '口袋裡的 MINITEEN 電子雞' }),
-          h('div', { className: 'intro-cover' }, ...cover.map((c) => characterCanvas(c))),
+          h('img', { className: 'intro-logo', src: './icons/diamond.png', alt: '' }),
           howToPlay(),
           h('button', { className: 'primary start', textContent: '開始遊戲', onclick: () => go('select') }),
           h('p', { className: 'disclaimer', textContent: 'SEVENTEEN MINITEEN 粉絲二創，非官方、非營利。存檔只在你自己的瀏覽器裡。' }),

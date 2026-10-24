@@ -20,5 +20,5 @@
 - 邀請作客（2026-10-24 使用者定案）：從已解鎖夥伴選 1 隻，要花金幣（`src/data/shop.ts` 的 `INVITE_PRICE`，暫定 50；使用者說不能免費，不然不會去賺金幣），待 `GUEST_HOURS`＝2 小時、沒有冷卻。客人和本命一樣大、一起縮小並排；客人在時本命心情衰減減半（`passTime` 依 `guest.until` 切成兩段）。存檔版本 4 加了 `guest`。搖飲料只有本命、不放窗戶（`drawRoom(ctx, false)`）。
 - 房間背景（`home.ts` 的 `drawRoom`）：左上角電子鐘（真實時間、24 小時制，不可擋角色）、窗戶（白天／傍晚／晚上天色跟時間）、地上垃圾跟清潔值。房間 nav 是搖飲料、商店、待推出、待推出；後兩格原本是拍照、相簿，使用者要先擱置、之後再決定。
 - 給朋友玩：GitHub Pages（https://pyondudu.github.io/carat-pocket/），repo 公開，push 到 main 自動部署。所以 `public/` 和 git 裡的東西都會公開，不能放官方原圖或金鑰。開頭說明在 `src/scenes/intro.ts`（還沒選本命時出現）。
-- PWA（2026-10-24）：圖示是程式畫的克拉鑽石（`tools/icon.py` → `public/icons/`，使用者指定）。`public/sw.js` 首頁先上網抓、其他檔案先用快取再背景更新，所以改了角色圖之後，玩家要多開一次才會看到新圖。新版本提示在 `src/update.ts`，比對 `__BUILD_ID__` 和 `version.json`（`vite.config.ts` 產生）。
+- PWA（2026-10-24）：圖示是程式畫的克拉鑽石，平面、左粉右藍漸層、切面間白線（照使用者給的參考圖；`tools/icon.py` → `public/icons/`，`diamond.png` 是說明頁用的透明版）。說明頁不放角色。`public/sw.js` 首頁先上網抓、其他檔案先用快取再背景更新，所以改了角色圖之後，玩家要多開一次才會看到新圖。新版本提示在 `src/update.ts`，比對 `__BUILD_ID__` 和 `version.json`（`vite.config.ts` 產生）。
 - `參考資料/` 是官方圖，不可進 git。

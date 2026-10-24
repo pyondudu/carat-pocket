@@ -78,7 +78,7 @@ export function shopScene(): Scene {
         const close = modal(
           characterCanvas(c),
           h('h2', { textContent: `解鎖 ${c.name}？` }),
-          h('p', { textContent: `解鎖後可以邀請 ${c.name} 來房間作客，並獲得專屬原料「${c.ingredient}」。` }),
+          h('p', { textContent: `解鎖後可以邀請 ${c.name} 來房間作客\n並獲得專屬原料「${c.ingredient}」` }),
           h('p', { className: 'hint', textContent: `目前有 ${state.coins} 🪙` }),
           yes,
         );

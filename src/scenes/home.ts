@@ -160,8 +160,8 @@ export function homeScene(): Scene {
         });
         const close = modal(
           h('h2', { textContent: '邀請誰來玩？' }),
-          h('p', { className: 'hint', textContent: `每次 ${INVITE_PRICE} 🪙，朋友會待 ${GUEST_HOURS} 小時。來玩時心情 +${INVITE_MOOD}、體力 −${INVITE_ENERGY}。目前有 ${state.coins} 🪙` }),
-          h('div', { className: 'grid' }, ...tiles),
+          h('p', { className: 'hint', textContent: `每次 ${INVITE_PRICE} 🪙，朋友會待 ${GUEST_HOURS} 小時\n來玩時心情 +${INVITE_MOOD}、體力 −${INVITE_ENERGY}\n目前有 ${state.coins} 🪙` }),
+          h('div', { className: 'invite-grid' }, ...tiles),
         );
       };
       const guestBtn = h('button', { className: 'guest-bar', onclick: inviteMenu });

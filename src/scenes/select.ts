@@ -18,7 +18,7 @@ export function selectScene(): Scene {
       );
       const hint = h('p', {
         className: 'hint',
-        textContent: firstTime ? '選中的角色會成為你的本命，其他 12 隻可以在商店解鎖成夥伴。' : '只能選已經解鎖的角色，數值各自保存。',
+        textContent: firstTime ? '選中的角色會成為你的本命\n其他 12 隻可以在商店解鎖' : '只能選已經解鎖的角色，數值各自保存。',
       });
       const units = UNITS.map((u) => {
         // 4 人排成 2×2，5 人排成上 2 下 3，每排置中

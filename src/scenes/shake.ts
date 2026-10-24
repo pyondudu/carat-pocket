@@ -218,7 +218,7 @@ function showCodex(): void {
     const owner = d.owner ? getCharacter(d.owner) : null;
     let note: string;
     if (entry) note = `做過 ${entry.count} 次・最佳 ${QUALITY_LABELS[entry.best as Quality]}`;
-    else if (owner && !state.unlocked.includes(owner.id)) note = `解鎖 ${owner.name} 才有原料`;
+    else if (owner && !state.unlocked.includes(owner.id)) note = '解鎖後才有原料';
     else note = `需要：${getIngredient(d.recipe[0]).name}＋？`;
     return h(
       'div',

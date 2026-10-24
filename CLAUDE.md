@@ -6,6 +6,8 @@
 
 可以點的東西一定要看得出是按鈕（有框線、陰影），不要做成像文字的無框按鈕；次要按鈕用 `secondary`（使用者 2026-10-24 反映「請 XX 先回家」看不出能點）。
 
+文字盡量置中；放不下一行時用 `\n` 在逗號處換行（`.modal p` 有 `white-space: pre-line`），或把說明縮短成一行，不要讓瀏覽器在詞中間斷開（使用者 2026-10-24 要求）。
+
 - 完整計畫與里程碑：`~/.claude/plans/app-mossy-sutton.md`；進度清單在 `README.md`。
 - 技術：Vite 6 + TypeScript，Canvas 2D 畫房間與角色（房間以 64 格像素畫再放大 4 倍；佔位圖關閉 imageSmoothing，AI 角色圖縮小時開啟），DOM 做按鈕與數值條。不用遊戲引擎、不用框架。
 - 存檔只在使用者自己的瀏覽器（localStorage，key `carat-pocket-save`，有 `version` 欄位）；改存檔結構時要升版本。

@@ -53,6 +53,8 @@ canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 .wallet { display: flex; gap: 10px; font-weight: 700; }
 
 .hint { margin: 0; color: var(--muted); font-size: 0.9rem; }
+/* 文字置中、照 \n 換行（使用者希望文字置中或盡量一行，不要在詞中間斷開） */
+.modal p, .select .hint { white-space: pre-line; text-wrap: balance; }
 
 /* 選角 */
 .unit { display: flex; flex-direction: column; gap: 10px; }
@@ -89,7 +91,7 @@ canvas.art { image-rendering: auto; }
 .modal h2 { margin: 4px 0 0; }
 .modal .ko { margin: 0 0 8px; color: var(--muted); }
 .modal canvas.big { width: 128px; height: 128px; }
-.modal dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; margin: 8px 0 0; }
+.modal dl { display: grid; grid-template-columns: auto auto; gap: 6px 12px; text-align: left; margin: 8px auto 0; width: fit-content; }
 .modal dt { color: var(--muted); }
 .modal dd { margin: 0; }
 .away { white-space: pre-line; }
@@ -155,7 +157,8 @@ canvas.room {
 
 /* 商店 */
 .shop-section { display: flex; flex-direction: column; gap: 8px; }
-.shop-section h2 { font-size: 0.95rem; margin: 4px 0 0; }
+.shop-section h2 { font-size: 0.95rem; margin: 4px 0 0; text-align: center; }
+.shop-section > .hint { text-align: center; }
 .shop-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
 .shop-item .icon { font-size: 1.6rem; }
 .shop-item .info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
@@ -186,3 +189,7 @@ canvas.room {
 /* 有新版本的提示（固定在畫面下方） */
 /* 置中不用 transform：按鈕按下時的 transform 會蓋掉它，按鈕會往右跳 */
 .update-banner { position: fixed; left: 0; right: 0; margin: 0 auto; width: max-content; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 50; background: #92a8d1; color: #fff; font-weight: bold; padding: 12px 20px; white-space: nowrap; }
+
+/* 邀請選單：角色少的時候也置中 */
+.invite-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
+.invite-grid .tile { width: calc((100% - 20px) / 3); }

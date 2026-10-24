@@ -173,7 +173,7 @@ canvas.room {
 /* 開頭說明 */
 .intro { text-align: center; }
 .intro-title { font-size: 2rem; margin: 12px 0 0; color: #c2607a; letter-spacing: 1px; }
-.intro-logo { display: block; width: 110px; margin: 8px auto 4px; }
+.intro-logo { display: block; width: 105px; margin: 8px auto 4px; image-rendering: pixelated; }
 .howto { list-style: none; padding: 0; margin: 8px 0 16px; display: grid; gap: 8px; text-align: left; }
 .howto li { display: flex; gap: 10px; align-items: center; background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 8px 12px; }
 .howto .icon { font-size: 1.5rem; }

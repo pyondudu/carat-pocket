@@ -1,72 +1,87 @@
-"""產生 PWA 主畫面圖示：平面的克拉鑽石（左粉右藍的橫向漸層，切面之間留白線；使用者給的參考圖樣式）。
+"""產生 PWA 主畫面圖示：像素風的克拉鑽石（32 格、左粉右藍分 6 段漸層、切面之間留 1 格白線，左右對稱）。
 
-用法：python3 tools/icon.py → public/icons/diamond-192.png、diamond-512.png、apple-touch-icon.png、favicon.png、diamond.png（透明背景）
+形狀照使用者給的平面鑽石參考圖（上半部交錯三角形、下半部三塊），2026-10-24 使用者從預覽選了「32 格・小」。
+用法：python3 tools/icon.py → public/icons/
+  diamond-px-192.png、diamond-px-512.png（主畫面）、apple-touch-icon-px.png、favicon-px.png、diamond-px.png（說明頁，透明背景）
+主畫面圖示改樣子時要換檔名：手機、GitHub、Google 打包 App 的伺服器都可能留著舊檔，對不上會裝不起來。
 """
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "icons"
 
 BG = (253, 249, 248)
-PINK = (238, 143, 163)  # 玫瑰石英粉（加深一點才看得清楚）
+PINK = (238, 143, 163)  # 玫瑰石英粉
 BLUE = (95, 134, 204)  # 寧靜藍
 
-# 鑽石座標（寬 100、高 72）：上緣 y=0、腰線 y=24、底尖 (50, 72)
-TOP = [18, 50, 82]
-GIRDLE = [0, 34, 66, 100]
-OUTLINE = [(18, 0), (82, 0), (100, 24), (50, 72), (0, 24)]
-# 切面之間的分隔線
-LINES = [
-    ((0, 24), (100, 24)),  # 腰線
-    ((18, 0), (34, 24)), ((50, 0), (34, 24)), ((50, 0), (66, 24)), ((82, 0), (66, 24)),  # 上半部交錯的三角形
-    ((34, 24), (50, 72)), ((66, 24), (50, 72)),  # 下半部三塊
-]
+GRID = 32  # 圖示的格數
+WIDTH = 21  # 鑽石寬（奇數才有正中間那一格）
+CROWN = 6  # 上半部列數
+STEPS = 6  # 漸層分幾段
 
 
-def diamond(S: int, width_ratio: float) -> Image.Image:
-    """S×S 透明背景的鑽石；width_ratio：鑽石寬度佔畫面的比例"""
-    w = S * width_ratio
-    k = w / 100
-    ox = (S - w) / 2
-    oy = (S - 72 * k) / 2 + 2 * k  # 視覺上往下一點
-    P = lambda x, y: (ox + x * k, oy + y * k)
-    # 橫向漸層
-    grad = Image.new("RGB", (S, S))
-    gd = ImageDraw.Draw(grad)
-    for x in range(S):
-        t = min(1, max(0, (x - ox) / w))
-        gd.line([(x, 0), (x, S)], fill=tuple(round(PINK[i] + (BLUE[i] - PINK[i]) * t) for i in range(3)))
-    # 遮罩：鑽石外形，再挖掉切面之間的分隔線
-    mask = Image.new("L", (S, S), 0)
-    md = ImageDraw.Draw(mask)
-    md.polygon([P(*p) for p in OUTLINE], fill=255)
-    gap = max(1, round(3.2 * k))
-    for a, b in LINES:
-        md.line([P(*a), P(*b)], fill=0, width=gap)
-    out = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    out.paste(grad, (0, 0), mask)
-    return out
+def diamond_cells() -> tuple[dict[tuple[int, int], tuple[int, int, int]], int]:
+    """回傳 {(x, y): 顏色} 和鑽石高度；座標從鑽石左上角起算"""
+    c = WIDTH // 2
+    top = CROWN - 1  # 第 0 列左端，每往下一列外擴 1 格
+    g = round(0.34 * (WIDTH - 1))  # 腰線上的內側頂點（參考圖在 34% 的位置）
+    girdle = CROWN  # 腰線那一列整列留白
+    tip = girdle + c  # 底尖
+
+    def color(x: int) -> tuple[int, int, int]:
+        t = round(x / (WIDTH - 1) * (STEPS - 1)) / (STEPS - 1)
+        return tuple(round(PINK[i] + (BLUE[i] - PINK[i]) * t) for i in range(3))
+
+    def line_x(x0: float, y0: float, x1: float, y1: float, y: int) -> int:
+        return round(x0 + (x1 - x0) * (y - y0) / (y1 - y0))
+
+    cells = {}
+    for y in range(tip + 1):
+        if y == girdle:
+            continue
+        left = top - y if y < girdle else y - girdle
+        gaps = set()
+        if y < girdle:
+            # 上半部：從上緣的 top、c 斜到腰線內點 g（右邊對稱）
+            for x0 in (top, c):
+                gx = line_x(x0, 0, g, CROWN - 1, y)
+                gaps |= {gx, WIDTH - 1 - gx}
+        elif y < tip - 1:
+            # 下半部：從腰線內點 g 斜到底尖，最後兩列不畫線，尖端才不會被切掉
+            gx = line_x(g, girdle, c, tip, y)
+            gaps |= {gx, WIDTH - 1 - gx}
+        for x in range(left, WIDTH - left):
+            if x not in gaps:
+                cells[(x, y)] = color(x)
+    return cells, tip + 1
 
 
-def draw(size: int, width_ratio: float, bg: tuple | None = BG) -> Image.Image:
-    """bg=None 時輸出透明背景（說明頁用）；Android 會把圖示裁成圓形，width_ratio 要留安全範圍"""
-    ss = 4  # 先放大 4 倍畫再縮小，邊緣才平滑
-    d = diamond(size * ss, width_ratio)
-    if bg is not None:
-        base = Image.new("RGBA", d.size, bg + (255,))
-        d = Image.alpha_composite(base, d).convert("RGB")
-    return d.resize((size, size), Image.LANCZOS)
+def icon(size: int) -> Image.Image:
+    cells, h = diamond_cells()
+    img = Image.new("RGB", (GRID, GRID), BG)
+    ox, oy = (GRID - WIDTH) // 2, (GRID - h) // 2
+    for (x, y), c in cells.items():
+        img.putpixel((ox + x, oy + y), c)
+    return img.resize((size, size), Image.NEAREST)
+
+
+def transparent(scale: int) -> Image.Image:
+    """說明頁用：只有鑽石、透明背景"""
+    cells, h = diamond_cells()
+    img = Image.new("RGBA", (WIDTH, h), (0, 0, 0, 0))
+    for (x, y), c in cells.items():
+        img.putpixel((x, y), c + (255,))
+    return img.resize((WIDTH * scale, h * scale), Image.NEAREST)
 
 
 def main() -> None:
-    # 主畫面圖示改過樣子就要換檔名：手機、GitHub、Google 打包 App 的伺服器都可能留著舊檔，對不上會裝不起來
     OUT.mkdir(parents=True, exist_ok=True)
-    draw(512, 0.62).save(OUT / "diamond-512.png")
-    draw(192, 0.62).save(OUT / "diamond-192.png")
-    draw(180, 0.7).save(OUT / "apple-touch-icon.png")
-    draw(64, 0.86).save(OUT / "favicon.png")
-    draw(256, 0.96, None).save(OUT / "diamond.png")
+    icon(512).save(OUT / "diamond-px-512.png")
+    icon(192).save(OUT / "diamond-px-192.png")
+    icon(192).save(OUT / "apple-touch-icon-px.png")  # iPhone 會自己縮成 180
+    icon(64).save(OUT / "favicon-px.png")
+    transparent(8).save(OUT / "diamond-px.png")
     print("已輸出到", OUT)
 
 

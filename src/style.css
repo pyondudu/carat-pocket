@@ -101,9 +101,11 @@ canvas.room {
 .meter { flex: 1; height: 10px; border: 2px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; }
 .fill { height: 100%; background: #8fd18f; transition: width 0.3s; }
 .fill.low { background: #f08a8a; }
+.guest-bar { width: 100%; font-size: 0.9rem; padding: 8px; background: #fff3d6; }
 .actions, .nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .actions button, .nav button { font-size: 0.85rem; padding: 10px 2px; }
 .nav button { background: #eef2fb; }
+.nav button.soon { color: var(--muted); }
 .debug button { background: #fff3c4; border-style: dashed; }
 
 .toast {

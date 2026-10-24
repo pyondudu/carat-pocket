@@ -183,7 +183,7 @@ export function shakeScene(): Scene {
       const cell = 6;
       const draw = (t: number) => {
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
-        drawRoom(ctx);
+        drawRoom(ctx, false);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const motion: Motion = { t, hopAt, tapAt };
         drawCharacter(ctx, char, 'happy', cx, bottom, height, motion);

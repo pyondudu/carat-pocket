@@ -2,3 +2,6 @@
 
 export const FOOD_PRICE = 10;
 export const SPECIAL_FOOD_PRICE = 30;
+
+/** 邀請夥伴來房間作客一次（使用者決定要花金幣，金額暫定） */
+export const INVITE_PRICE = 50;

@@ -1,9 +1,10 @@
 // 遊戲狀態與存檔（localStorage），含離線時間補算
 
+import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 3; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood
+const VERSION = 4; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
@@ -20,11 +21,13 @@ export interface GameState {
   codex: Record<string, { count: number; best: number }>;
   /** 持有的本命特殊食物數量 */
   specialFood: number;
+  /** 來房間作客的夥伴；until 是回家的時間 */
+  guest: { id: string; until: number } | null;
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, guest: null, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -45,6 +48,10 @@ function load(): GameState {
         delete data.codex.buldak;
         data.specialFood = 0;
         data.version = 3;
+      }
+      if (data.version === 3) {
+        data.guest = null;
+        data.version = 4;
       }
       if (data.version === VERSION) return renameIds(data);
     }
@@ -100,10 +107,17 @@ export function chooseMain(id: string): void {
 const FOOD_REGEN_HOURS = 4;
 const FOOD_REGEN_CAP = 3;
 
-/** 經過 ms 毫秒：主角數值衰減＋自動補食物 */
-export function passTime(ms: number): void {
+/** 作客停留多久 */
+export const GUEST_HOURS = 2;
+
+/** 經過 ms 毫秒（到現在為止）：主角數值衰減＋自動補食物；有客人的那段時間心情掉一半 */
+export function passTime(ms: number, now = Date.now()): void {
   const pet = mainPet();
-  if (pet) applyElapsed(pet, ms);
+  if (pet) {
+    const withGuest = state.guest ? Math.min(ms, Math.max(0, state.guest.until - (now - ms))) : 0;
+    applyElapsed(pet, withGuest, 0.5);
+    applyElapsed(pet, ms - withGuest);
+  }
   if (state.food >= FOOD_REGEN_CAP) {
     state.foodProgress = 0;
     return;
@@ -115,18 +129,26 @@ export function passTime(ms: number): void {
 }
 
 /** 把經過的時間套用到主角，回傳 [經過毫秒, 套用前數值] */
-export function catchUp(now = Date.now()): { elapsed: number; before: PetStats } | null {
+export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; guestLeft: string | null } | null {
   const pet = mainPet();
   if (!pet) return null;
   const elapsed = Math.max(0, now - state.lastSeen);
   const before = { ...pet.stats };
-  passTime(elapsed);
+  passTime(elapsed, now);
   state.lastSeen = now;
-  return { elapsed, before };
+  return { elapsed, before, guestLeft: sendGuestHome(now) };
+}
+
+/** 客人時間到了就回家，回傳回家的是誰 */
+export function sendGuestHome(now = Date.now()): string | null {
+  if (!state.guest || state.guest.until > now) return null;
+  const id = state.guest.id;
+  state.guest = null;
+  return id;
 }
 
 /** 「你不在的時候發生了…」訊息；離開不到 10 分鐘就不顯示 */
-export function awayMessage(elapsed: number, before: PetStats, after: PetStats): string | null {
+export function awayMessage(elapsed: number, before: PetStats, after: PetStats, guestLeft: string | null = null): string | null {
   if (elapsed < 10 * 60_000) return null;
   const mins = Math.round(elapsed / 60_000);
   const time = mins < 60 ? `${mins} 分鐘` : `${Math.floor(mins / 60)} 小時 ${mins % 60} 分鐘`;
@@ -136,5 +158,6 @@ export function awayMessage(elapsed: number, before: PetStats, after: PetStats):
       return d === 0 ? null : `${STAT_LABELS[k]} ${d > 0 ? '+' : ''}${d}`;
     })
     .filter(Boolean);
-  return `你離開了 ${time}。\n${lines.join('、') || '一切都好～'}`;
+  const guest = guestLeft ? `\n${getCharacter(guestLeft).name} 來玩過，已經回家了。` : '';
+  return `你離開了 ${time}。\n${lines.join('、') || '一切都好～'}${guest}`;
 }

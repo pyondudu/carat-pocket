@@ -7,7 +7,8 @@ import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
 import { awayMessage, catchUp, mainPet, save, state } from './state';
-import { h, modal } from './ui';
+import { getCharacter } from './data/characters';
+import { h, modal, toast } from './ui';
 
 register('select', selectScene);
 register('home', homeScene);
@@ -21,8 +22,9 @@ function welcomeBack(): void {
   const pet = mainPet();
   if (!result || !pet) return;
   save();
-  const msg = awayMessage(result.elapsed, result.before, pet.stats);
+  const msg = awayMessage(result.elapsed, result.before, pet.stats, result.guestLeft);
   if (msg) modal(h('h2', { textContent: '你不在的時候…' }), h('p', { className: 'away', textContent: msg }));
+  else if (result.guestLeft) toast(`${getCharacter(result.guestLeft).name} 回家了，下次再來玩～`);
 }
 
 loadSprites().then(() => {

@@ -31,12 +31,12 @@ export function newPet(): PetState {
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
-/** 依經過的毫秒數更新數值（直接修改 pet） */
-export function applyElapsed(pet: PetState, ms: number): void {
+/** 依經過的毫秒數更新數值（直接修改 pet）；moodScale：心情下降的倍數（有客人時 0.5） */
+export function applyElapsed(pet: PetState, ms: number, moodScale = 1): void {
   const h = ms / 3_600_000;
   const s = pet.stats;
   s.hunger = clamp(s.hunger + DECAY_PER_HOUR.hunger * h);
-  s.mood = clamp(s.mood + DECAY_PER_HOUR.mood * h);
+  s.mood = clamp(s.mood + DECAY_PER_HOUR.mood * moodScale * h);
   s.clean = clamp(s.clean + DECAY_PER_HOUR.clean * h);
   s.energy = clamp(s.energy + (pet.sleeping ? SLEEP_ENERGY_PER_HOUR : DECAY_PER_HOUR.energy) * h);
   // 睡飽自動起床

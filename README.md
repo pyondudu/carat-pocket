@@ -43,4 +43,4 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色表情已完成，O.C.L 以外改為底圖＋程式五官，會呼吸、眨眼、互動時跳；食物、房間等素材待做）
 - [ ] 6. PWA（manifest + service worker）
 - [ ] 7. 部署到免費 HTTPS 網址分享給朋友
-- [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.16（已決定，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒
+- [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.06 手錶開發板（帶電池版，已下單，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒

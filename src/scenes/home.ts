@@ -283,6 +283,10 @@ export function homeScene(): Scene {
           const gm: Motion = { t: t + off, hopAt: guestHopAt === undefined ? undefined : guestHopAt + off };
           const gBounce = hasRig(g) ? 0 : Math.floor((t + off) / 500) % 2;
           drawCharacter(ctx, g, 'happy', ga.cx, ga.bottom - gBounce * ZOOM, ga.height, gm);
+          // 玩在一起：頭上飄音符
+          ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
+          drawNotes(ctx, t, Math.min(ma.bottom - ma.height, ga.bottom - ga.height) / ZOOM);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
         } else {
           drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, bottom - bounce * ZOOM, sprite ? 168 : 128, motion);
         }
@@ -472,6 +476,24 @@ function drawTrash(ctx: CanvasRenderingContext2D, clean: number): void {
       }),
     );
   }
+}
+
+// 音符像素圖（八分音符），一個字一格
+const NOTE = ['..XXX', '..X.X', '..X..', '..X..', 'XXX..', 'XXX..'];
+const NOTE_COLORS = ['#e87a96', '#6f8fd0', '#e87a96'];
+
+/** 作客時頭上的音符：三顆輪流往上飄、左右晃、淡出；top＝兩隻角色比較高的那隻頭頂（房間格座標） */
+function drawNotes(ctx: CanvasRenderingContext2D, t: number, top: number): void {
+  const CYCLE = 2400;
+  [20, 32, 44].forEach((x0, i) => {
+    const p = ((t + i * (CYCLE / 3)) % CYCLE) / CYCLE; // 0～1
+    const x = Math.round(x0 + Math.sin(p * Math.PI * 2 + i) * 2);
+    const y = Math.round(top - 5 - p * 12);
+    ctx.globalAlpha = p < 0.2 ? p / 0.2 : p > 0.7 ? (1 - p) / 0.3 : 1;
+    ctx.fillStyle = NOTE_COLORS[i];
+    NOTE.forEach((row, dy) => [...row].forEach((ch, dx) => ch === 'X' && ctx.fillRect(x + dx, y + dy, 1, 1)));
+  });
+  ctx.globalAlpha = 1;
 }
 
 function drawZzz(ctx: CanvasRenderingContext2D, t: number): void {

@@ -177,3 +177,6 @@ canvas.room {
 .intro .start { width: 100%; font-size: 1.15rem; padding: 14px; }
 .disclaimer { font-size: 0.75rem; color: var(--muted); margin-top: 14px; }
 .bar .help { padding: 2px 10px; font-weight: bold; }
+
+/* 下載角色圖時 */
+.loading { text-align: center; margin-top: 40vh; color: var(--muted); }

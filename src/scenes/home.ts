@@ -228,6 +228,28 @@ export function homeScene(): Scene {
           h('button', { textContent: '🗑️ 重來', onclick: () => (resetSave(), go('select')) }),
         );
       };
+      // 玩法說明最下面放「重新開始」，要再確認一次才會刪存檔（原本只有 #debug 有重來）
+      const helpModal = () => {
+        const restart = h('button', { className: 'secondary danger', textContent: '🔄 重新開始' });
+        const closeHelp = modal(h('h2', { textContent: '怎麼玩' }), howToPlay(), restart);
+        restart.onclick = () => {
+          closeHelp();
+          const yes = h('button', { className: 'primary danger', textContent: '確定重新開始' });
+          const no = h('button', { className: 'secondary', textContent: '取消' });
+          const close = modal(
+            h('h2', { textContent: '要重新開始嗎？' }),
+            h('p', { textContent: '金幣、食物、飲料圖鑑、解鎖的角色都會清空，\n回到選本命，而且無法復原。' }),
+            yes,
+            no,
+          );
+          no.onclick = close;
+          yes.onclick = () => {
+            close();
+            resetSave();
+            go('intro');
+          };
+        };
+      };
       const nav = h(
         'nav',
         { className: 'nav' },
@@ -246,7 +268,7 @@ export function homeScene(): Scene {
             'header',
             { className: 'bar' },
             h('h1', { className: 'pixel-title', textContent: 'Carat Pocket' }),
-            h('button', { className: 'help', textContent: '📖 玩法說明', onclick: () => modal(h('h2', { textContent: '怎麼玩' }), howToPlay()) }),
+            h('button', { className: 'help', textContent: '📖 玩法說明', onclick: helpModal }),
             h('div', { className: 'wallet' }, coins, food),
           ),
           canvas,

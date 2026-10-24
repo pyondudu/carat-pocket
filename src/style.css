@@ -202,3 +202,7 @@ canvas.room {
 
 /* 像素食物圖示，大小跟表情符號一樣 */
 .food-icon { width: 1.15em; height: 1.15em; vertical-align: -0.2em; image-rendering: pixelated; }
+
+/* 重新開始：會刪存檔，用紅色提醒 */
+button.secondary.danger { color: #c0392b; border-color: #c0392b; }
+button.primary.danger { background: #c0392b; border-color: #8e2a20; color: #fff; }

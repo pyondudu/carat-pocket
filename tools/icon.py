@@ -1,6 +1,6 @@
 """產生 PWA 主畫面圖示：平面的克拉鑽石（左粉右藍的橫向漸層，切面之間留白線；使用者給的參考圖樣式）。
 
-用法：python3 tools/icon.py → public/icons/icon-192.png、icon-512.png、apple-touch-icon.png、favicon.png、diamond.png（透明背景）
+用法：python3 tools/icon.py → public/icons/diamond-192.png、diamond-512.png、apple-touch-icon.png、favicon.png、diamond.png（透明背景）
 """
 from pathlib import Path
 
@@ -60,9 +60,10 @@ def draw(size: int, width_ratio: float, bg: tuple | None = BG) -> Image.Image:
 
 
 def main() -> None:
+    # 主畫面圖示改過樣子就要換檔名：手機、GitHub、Google 打包 App 的伺服器都可能留著舊檔，對不上會裝不起來
     OUT.mkdir(parents=True, exist_ok=True)
-    draw(512, 0.62).save(OUT / "icon-512.png")
-    draw(192, 0.62).save(OUT / "icon-192.png")
+    draw(512, 0.62).save(OUT / "diamond-512.png")
+    draw(192, 0.62).save(OUT / "diamond-192.png")
     draw(180, 0.7).save(OUT / "apple-touch-icon.png")
     draw(64, 0.86).save(OUT / "favicon.png")
     draw(256, 0.96, None).save(OUT / "diamond.png")

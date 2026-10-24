@@ -233,7 +233,7 @@ export function homeScene(): Scene {
             'header',
             { className: 'bar' },
             h('h1', { textContent: char.name }),
-            h('button', { className: 'ghost help', textContent: '？', title: '玩法說明', onclick: () => modal(h('h2', { textContent: '怎麼玩' }), howToPlay()) }),
+            h('button', { className: 'ghost help', textContent: '📖 玩法', title: '玩法說明', onclick: () => modal(h('h2', { textContent: '怎麼玩' }), howToPlay()) }),
             h('div', { className: 'wallet' }, coins, food),
           ),
           canvas,

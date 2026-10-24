@@ -147,3 +147,17 @@ canvas.room {
 .codex-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; }
 .codex-item small { color: var(--muted); font-size: 0.65rem; }
 .codex-item.unknown strong { color: var(--muted); }
+
+/* 商店 */
+.shop-section { display: flex; flex-direction: column; gap: 8px; }
+.shop-section h2 { font-size: 0.95rem; margin: 4px 0 0; }
+.shop-item { display: flex; align-items: center; gap: 10px; background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; }
+.shop-item .icon { font-size: 1.6rem; }
+.shop-item .info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.shop-item small { color: var(--muted); font-size: 0.75rem; }
+.shop-item button { flex: none; font-weight: 700; padding: 8px 12px; }
+
+/* 餵食選單 */
+.feed-options { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; }
+.feed-option { display: flex; flex-direction: column; gap: 2px; padding: 10px; }
+.feed-option small { color: var(--muted); }

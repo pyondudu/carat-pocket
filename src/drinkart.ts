@@ -109,9 +109,6 @@ function cupCanvas(d: Drink): HTMLCanvasElement {
       case 'leaf':
         for (const [x, y] of [[3, 2], [4, 2], [3, 3], [4, 3], [5, 3], [4, 4]]) px(x, y, ex);
         break;
-      case 'noodle':
-        for (const y of [9, 12]) for (let x = 0; x < CUP_W; x++) put(x, y + (x % 2), ex);
-        break;
     }
     // 吸管
     for (let y = 0; y < 5; y++) px(9, y, STRAW);

@@ -2,10 +2,10 @@
 
 import { getCharacter } from '../data/characters';
 import { drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
-import { doAction, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
+import { doAction, feedSpecial, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { mainPet, passTime, resetSave, save, state } from '../state';
-import { h, toast } from '../ui';
+import { h, modal, toast } from '../ui';
 
 export const ROOM = 64; // 房間以 64 格像素畫
 export const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
@@ -35,7 +35,7 @@ export function homeScene(): Scene {
 
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
-        food.textContent = `🍙 ${state.food}`;
+        food.textContent = `🍙 ${state.food}${state.specialFood ? ` ⭐ ${state.specialFood}` : ''}`;
         for (const [k, fill] of bars) {
           const v = pet.stats[k];
           fill.style.width = `${v}%`;
@@ -52,21 +52,52 @@ export function homeScene(): Scene {
 
       const act = (a: Action) => {
         tick();
-        if (a === 'feed' && !pet.sleeping) {
-          if (state.food <= 0) return toast('沒有食物了，每小時會自動補 1 個');
-          state.food--;
-        }
         toast(doAction(pet, a));
         if (a !== 'sleep' && !pet.sleeping) hopAt = performance.now();
         save();
         refresh();
       };
 
+      // 餵食選單：一般食物（飯糰）或本命的特殊食物
+      const feedMenu = () => {
+        tick();
+        if (pet.sleeping) return toast('噓…正在睡覺');
+        if (state.food <= 0 && state.specialFood <= 0) return toast('沒有食物了，去商店買吧（每 4 小時也會自動補 1 個）');
+        const option = (label: string, count: number, note: string, eat: () => string) => {
+          const b = h('button', { className: 'feed-option', disabled: count <= 0 }, h('strong', { textContent: `${label} ×${count}` }), h('small', { textContent: note }));
+          b.onclick = () => {
+            toast(eat());
+            hopAt = performance.now();
+            save();
+            refresh();
+            close();
+          };
+          return b;
+        };
+        const close = modal(
+          h('h2', { textContent: '要餵什麼？' }),
+          h(
+            'div',
+            { className: 'feed-options' },
+            option('🍙 飯糰', state.food, '飽足 +30', () => {
+              state.food--;
+              return doAction(pet, 'feed');
+            }),
+            option(`⭐ ${char.specialFood}`, state.specialFood, '飽足 +40、心情 +30', () => {
+              state.specialFood--;
+              feedSpecial(pet);
+              return `${char.specialFood}！最喜歡了！`;
+            }),
+          ),
+          h('button', { className: 'ghost', textContent: '🛍️ 去商店買', onclick: () => (close(), go('shop')) }),
+        );
+      };
+
       const sleepBtn = h('button', { onclick: () => act('sleep') });
       const actions = h(
         'div',
         { className: 'actions' },
-        h('button', { textContent: '🍙 餵食', onclick: () => act('feed') }),
+        h('button', { textContent: '🍙 餵食', onclick: feedMenu }),
         h('button', { textContent: '🎾 玩耍', onclick: () => act('play') }),
         h('button', { textContent: '🫧 清潔', onclick: () => act('clean') }),
         sleepBtn,
@@ -95,7 +126,7 @@ export function homeScene(): Scene {
         { className: 'nav' },
         h('button', { textContent: '📷 拍照', onclick: soon('拍照') }),
         h('button', { textContent: '🥤 搖飲料', onclick: () => go('shake') }),
-        h('button', { textContent: '🛍️ 商店', onclick: soon('商店') }),
+        h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
         h('button', { textContent: '📒 相簿', onclick: soon('相簿') }),
       );
 
@@ -108,7 +139,6 @@ export function homeScene(): Scene {
             { className: 'bar' },
             h('h1', { textContent: char.name }),
             h('div', { className: 'wallet' }, coins, food),
-            h('button', { className: 'ghost', textContent: '換主角', onclick: () => go('select') }),
           ),
           canvas,
           statsEl,

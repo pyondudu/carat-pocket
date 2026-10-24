@@ -53,6 +53,12 @@ export function moodOf(pet: PetState): Mood {
 
 export type Action = 'feed' | 'play' | 'clean' | 'sleep';
 
+/** 本命特殊食物：飽足 +40、心情 +30 */
+export function feedSpecial(pet: PetState): void {
+  pet.stats.hunger = clamp(pet.stats.hunger + 40);
+  pet.stats.mood = clamp(pet.stats.mood + 30);
+}
+
 const SHAKE_ENERGY = 10;
 
 /** 能不能搖飲料；不能的話回傳原因 */

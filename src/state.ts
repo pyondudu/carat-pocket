@@ -3,7 +3,7 @@
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 2; // 2：加入飲料圖鑑 codex
+const VERSION = 3; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
@@ -14,15 +14,17 @@ export interface GameState {
   pets: Record<string, PetState>; // 每個角色各自保存數值
   coins: number;
   food: number;
-  /** 自動補食物的累積進度（小時，0～1）；舊存檔沒有這個欄位 */
+  /** 自動補食物的累積進度（0～1 個）；舊存檔沒有這個欄位 */
   foodProgress?: number;
   /** 飲料圖鑑：做過幾次、最好的品質（1～3） */
   codex: Record<string, { count: number; best: number }>;
+  /** 持有的本命特殊食物數量 */
+  specialFood: number;
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -36,6 +38,13 @@ function load(): GameState {
         // 版本 1 沒有圖鑑，補上空的，其他資料保留
         data.codex = {};
         data.version = 2;
+      }
+      if (data.version === 2) {
+        // 版本 3：螺螄粉紅茶、火雞麵冰沙改成水蜜桃紅茶、藍莓優格奶綠，舊紀錄拿掉
+        delete data.codex.luosifen;
+        delete data.codex.buldak;
+        data.specialFood = 0;
+        data.version = 3;
       }
       if (data.version === VERSION) return renameIds(data);
     }
@@ -87,8 +96,9 @@ export function chooseMain(id: string): void {
   save();
 }
 
-/** 商店做好之前的暫時措施：每小時自動補 1 個食物，最多存到 10 個 */
-const FOOD_REGEN_CAP = 10;
+/** 自動補食物：每 4 小時 1 個，最多存到 3 個（避免沒食物又沒體力搖飲料時卡住） */
+const FOOD_REGEN_HOURS = 4;
+const FOOD_REGEN_CAP = 3;
 
 /** 經過 ms 毫秒：主角數值衰減＋自動補食物 */
 export function passTime(ms: number): void {
@@ -98,7 +108,7 @@ export function passTime(ms: number): void {
     state.foodProgress = 0;
     return;
   }
-  const total = (state.foodProgress ?? 0) + ms / 3_600_000;
+  const total = (state.foodProgress ?? 0) + ms / 3_600_000 / FOOD_REGEN_HOURS;
   const gained = Math.floor(total);
   state.food = Math.min(FOOD_REGEN_CAP, state.food + gained);
   state.foodProgress = total - gained;

@@ -126,7 +126,7 @@ export function shakeScene(): Scene {
         save();
         result = { drink, quality, coins: gain, isNew };
         phase = 'result';
-        if (!drink.dark) hopAt = performance.now();
+        hopAt = performance.now();
         coins.textContent = `🪙 ${state.coins}`;
         showResult();
       };
@@ -134,7 +134,7 @@ export function shakeScene(): Scene {
       const showResult = () => {
         const r = result!;
         const stars = '★'.repeat(r.quality) + '☆'.repeat(3 - r.quality);
-        const comment = r.drink.dark ? '……這是什麼味道？' : r.drink === MYSTERY ? '好像不是任何一種飲料…換個組合試試？' : `${taps} 下，${QUALITY_LABELS[r.quality]}！`;
+        const comment = r.drink === MYSTERY ? '好像不是任何一種飲料…換個組合試試？' : `${taps} 下，${QUALITY_LABELS[r.quality]}！`;
         panel.replaceChildren(
           h(
             'div',
@@ -186,8 +186,7 @@ export function shakeScene(): Scene {
         drawRoom(ctx);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const motion: Motion = { t, hopAt, tapAt };
-        const sad = phase === 'result' && result!.drink.dark;
-        drawCharacter(ctx, char, sad ? 'sad' : 'happy', cx, bottom, height, motion);
+        drawCharacter(ctx, char, 'happy', cx, bottom, height, motion);
         const sx = cx + height * 0.42;
         const sy = bottom - height * 0.5;
         if (phase === 'result') drawDrink(ctx, result!.drink, sx, bottom, 4);

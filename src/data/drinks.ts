@@ -20,8 +20,8 @@ const BASIC: Ingredient[] = [
 
 /** 專屬原料的顏色（名稱在 characters.ts） */
 const SPECIAL_COLORS: Record<string, string> = {
-  choitcherry: '#c8283c', jjongtoram: '#6b4226', shuasumi: '#8a5a3c', ocl: '#d2691e',
-  tamtam: '#4a2a14', foxdungee: '#e0362c', ppyopuli: '#e8d2a8', thepalee: '#7fa34a',
+  choitcherry: '#c8283c', jjongtoram: '#6b4226', shuasumi: '#8a5a3c', ocl: '#f7b0a0',
+  tamtam: '#4a2a14', foxdungee: '#4a4fa0', ppyopuli: '#e8d2a8', thepalee: '#7fa34a',
   kimja: '#fff4dc', doa: '#f5c542', bboogyuli: '#f39a2b', nonver: '#8fe3c8', chandalee: '#dfeef5',
 };
 
@@ -34,8 +34,8 @@ export function getIngredient(id: string): Ingredient {
   return INGREDIENTS.find((x) => x.id === id)!;
 }
 
-/** 杯子上的配料：冰塊、奶泡、厚奶蓋、水果、底層、葉子、麵條 */
-export type Topping = 'ice' | 'foam' | 'cap' | 'fruit' | 'layer' | 'leaf' | 'noodle';
+/** 杯子上的配料：冰塊、奶泡、厚奶蓋、水果、底層、葉子 */
+export type Topping = 'ice' | 'foam' | 'cap' | 'fruit' | 'layer' | 'leaf';
 
 export interface Drink {
   id: string;
@@ -45,7 +45,6 @@ export interface Drink {
   color: string; // 飲料顏色
   topping?: Topping;
   extra?: string; // 配料顏色
-  dark?: boolean; // 黑暗料理：結果畫面角色會難過
 }
 
 // 同時符合多杯時，招牌飲優先，其次照這個順序
@@ -59,9 +58,9 @@ export const DRINKS: Drink[] = [
   { id: 'cherrysmoothie', name: '櫻桃冰沙', recipe: ['choitcherry', 'ice'], owner: 'choitcherry', color: '#e0566a', topping: 'fruit', extra: '#c8283c' },
   { id: 'latte', name: '拿鐵', recipe: ['jjongtoram', 'milk'], owner: 'jjongtoram', color: '#c8a07a', topping: 'foam', extra: '#fbf4e6' },
   { id: 'earlgrey', name: '伯爵鮮奶茶', recipe: ['shuasumi', 'milk'], owner: 'shuasumi', color: '#c7a487', topping: 'foam', extra: '#f4e8d8' },
-  { id: 'luosifen', name: '螺螄粉紅茶', recipe: ['ocl', 'blacktea'], owner: 'ocl', color: '#b85c1e', topping: 'noodle', extra: '#f1dfa8', dark: true },
+  { id: 'peachtea', name: '水蜜桃紅茶', recipe: ['ocl', 'blacktea'], owner: 'ocl', color: '#c8703a', topping: 'fruit', extra: '#f7b0a0' },
   { id: 'brownsugar', name: '黑糖鮮奶', recipe: ['tamtam', 'milk'], owner: 'tamtam', color: '#f3e6d2', topping: 'layer', extra: '#5a3018' },
-  { id: 'buldak', name: '火雞麵冰沙', recipe: ['foxdungee', 'ice'], owner: 'foxdungee', color: '#e8442e', topping: 'noodle', extra: '#f6d77a', dark: true },
+  { id: 'blueberry', name: '藍莓優格奶綠', recipe: ['foxdungee', 'greentea'], owner: 'foxdungee', color: '#d9d2e6', topping: 'fruit', extra: '#4a4fa0' },
   { id: 'ricemilk', name: '米漿紅茶', recipe: ['ppyopuli', 'blacktea'], owner: 'ppyopuli', color: '#c69466', topping: 'layer', extra: '#e8d2a8' },
   { id: 'matcha', name: '抹茶拿鐵', recipe: ['thepalee', 'milk'], owner: 'thepalee', color: '#a9c46c', topping: 'foam', extra: '#f6f3e4' },
   { id: 'milkcap', name: '奶蓋綠茶', recipe: ['kimja', 'greentea'], owner: 'kimja', color: '#c4cf5a', topping: 'cap', extra: '#fff4dc' },

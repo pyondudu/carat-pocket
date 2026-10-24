@@ -3,7 +3,9 @@
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 1;
+const VERSION = 2; // 2：加入飲料圖鑑 codex
+/** 改過的角色 id：舊存檔讀進來時換成新的 */
+const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
 export interface GameState {
   version: number;
@@ -14,11 +16,13 @@ export interface GameState {
   food: number;
   /** 自動補食物的累積進度（小時，0～1）；舊存檔沒有這個欄位 */
   foodProgress?: number;
+  /** 飲料圖鑑：做過幾次、最好的品質（1～3） */
+  codex: Record<string, { count: number; best: number }>;
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -28,12 +32,29 @@ function load(): GameState {
     const raw = localStorage.getItem(SAVE_KEY);
     if (raw) {
       const data = JSON.parse(raw) as GameState;
-      if (data.version === VERSION) return data;
+      if (data.version === 1) {
+        // 版本 1 沒有圖鑑，補上空的，其他資料保留
+        data.codex = {};
+        data.version = 2;
+      }
+      if (data.version === VERSION) return renameIds(data);
     }
   } catch {
     // 存檔壞掉或無法讀取就重新開始
   }
   return freshState();
+}
+
+function renameIds(data: GameState): GameState {
+  for (const [from, to] of Object.entries(RENAMED_IDS)) {
+    if (data.mainId === from) data.mainId = to;
+    data.unlocked = data.unlocked.map((id) => (id === from ? to : id));
+    if (data.pets[from]) {
+      data.pets[to] = data.pets[from];
+      delete data.pets[from];
+    }
+  }
+  return data;
 }
 
 export function save(): void {

@@ -53,6 +53,21 @@ export function moodOf(pet: PetState): Mood {
 
 export type Action = 'feed' | 'play' | 'clean' | 'sleep';
 
+const SHAKE_ENERGY = 10;
+
+/** 能不能搖飲料；不能的話回傳原因 */
+export function shakeBlocked(pet: PetState): string | null {
+  if (pet.sleeping) return '噓…正在睡覺，起床再來搖吧';
+  if (pet.stats.energy < SHAKE_ENERGY) return '太累了，先睡一下再來搖吧';
+  return null;
+}
+
+/** 搖完一杯：體力 −10、心情 +5 */
+export function applyShake(pet: PetState): void {
+  pet.stats.energy = clamp(pet.stats.energy - SHAKE_ENERGY);
+  pet.stats.mood = clamp(pet.stats.mood + 5);
+}
+
 /** 執行動作，回傳要顯示的訊息 */
 export function doAction(pet: PetState, action: Action): string {
   const s = pet.stats;

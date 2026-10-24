@@ -1,5 +1,7 @@
 # Carat Pocket 專案說明（給 Claude）
 
+**所有給使用者看的文字都用繁體中文，包括工具呼叫之間的一句話進度訊息。** 這個專案的程式碼和指令輸出都是英文，使用者已經多次抓到短進度句變成英文。
+
 - 完整計畫與里程碑：`~/.claude/plans/app-mossy-sutton.md`；進度清單在 `README.md`。
 - 技術：Vite 6 + TypeScript，Canvas 2D 畫房間與角色（房間以 64 格像素畫再放大 4 倍；佔位圖關閉 imageSmoothing，AI 角色圖縮小時開啟），DOM 做按鈕與數值條。不用遊戲引擎、不用框架。
 - 存檔只在使用者自己的瀏覽器（localStorage，key `carat-pocket-save`，有 `version` 欄位）；改存檔結構時要升版本。
@@ -13,5 +15,6 @@
 - 程式五官（使用者 2026-10-24 試過 TAMTAM 後決定採用；O.C.L 以外 12 隻已完成）：`tools/face_rig.py` 的 `RIGS` 寫眼睛、嘴巴的清除範圍（1024 原圖座標），跑完產生 `public/sprites/<id>/base.png` 和 `src/data/faces.json`。開心時遊戲直接從 happy.png 複製原本的眼睛嘴巴（角色招牌的眼睛不會被換掉），其他表情在 `src/face.ts` 的 `EXPRESSIONS` 改參數，不用再生圖。O.C.L 是三隻疊在一起、難過／睡覺是核准的 AI 版，維持用 PNG；牠的生病版 `sick.png` 是 `face_edits.py` 從開心版改的（沒有 sick.png 的角色會借用 sad.png）。用 `#sheet` 總表檢查。
 - 看總表不要把 PNG 壓成 256 色，顏色會跑掉（葉子變褐色）。
 - 手機試玩：VM 的網路手機連不到，改用私人 Artifact（https://claude.ai/artifact/9GoFNK4eWXnMP7Tpdreu7x）。做法：`npm run build` 後把 dist 的 css/js 內嵌成單一 HTML，`public/sprites/` 用 Artifact 的 `files` 附上。Artifact 網址不能帶 query，所以快轉用 `#debug`。
+- 搖飲料（2026-10-24 使用者定案）：基本原料牛奶、紅茶、綠茶、冰塊、果糖；每隻角色一種專屬原料（`characters.ts` 的 `ingredient`，使用者指定），解鎖夥伴才拿得到；19 款飲料的名稱與配方是使用者改過的，改之前先問。規則在 `src/shake.ts`，存檔版本 2 加了 `codex`。
 - 食物每小時自動補 1 個（上限 10）是商店完成前的暫時措施，做商店時要拿掉（`src/state.ts` 的 `passTime`）。
 - `參考資料/` 是官方圖，不可進 git。

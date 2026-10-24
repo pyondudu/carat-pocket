@@ -187,7 +187,7 @@ function spriteFor(c: Character, mood: Mood): HTMLCanvasElement {
 
 /** 已經有正式圖的角色；每個角色資料夾放 happy/sad/sleep/shake 四張 */
 const SPRITE_IDS = [
-  'choitcherry', 'jjongtoram', 'shuasum', 'ocl', 'tamtam', 'foxdungee', 'ppyopuli',
+  'choitcherry', 'jjongtoram', 'shuasumi', 'ocl', 'tamtam', 'foxdungee', 'ppyopuli',
   'thepalee', 'kimja', 'doa', 'bboogyuli', 'nonver', 'chandalee',
 ];
 // 生病版目前只有 O.C.L 有（其他角色用程式五官），沒有的就借難過版
@@ -241,6 +241,16 @@ function composeFace(c: Character, base: HTMLImageElement, happy: HTMLImageEleme
 export interface Motion {
   t: number;
   hopAt?: number;
+  tapAt?: number; // 搖飲料每點一下：快速壓扁回彈
+}
+
+const TAP_MS = 160;
+
+/** 點一下的壓扁量（0～1），0.16 秒內回彈 */
+function tapSquash(m?: Motion): number {
+  if (!m || m.tapAt === undefined) return 0;
+  const p = (m.t - m.tapAt) / TAP_MS;
+  return p < 0 || p >= 1 ? 0 : 1 - p;
 }
 
 const HOP_MS = 800;
@@ -288,8 +298,9 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
     // 呼吸：以腳底為中心，高度和寬度反向小幅變化，睡覺時慢一點
     const b = motion ? Math.sin((t / (sleeping ? 4500 : 3000)) * 2 * Math.PI) : 0;
     const j = motion?.hopAt !== undefined ? hop(t - motion.hopAt) : hop(-1);
-    const sy = (1 + 0.02 * b) * j.sy;
-    const sx = (1 - 0.012 * b) * j.sx;
+    const q = tapSquash(motion);
+    const sy = (1 + 0.02 * b) * j.sy * (1 - 0.08 * q);
+    const sx = (1 - 0.012 * b) * j.sx * (1 + 0.06 * q);
     const k = height / base.height;
     const img = composeFace(c, base, happy, rig, pose, !!motion && !sleeping && blinking(t));
     ctx.save();
@@ -306,10 +317,12 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
   const img = imageFor(c, pose);
   if (img) {
     // AI 圖解析度比畫面高，縮小時開平滑才不會破碎
-    const w = (img.width * height) / img.height;
+    const q = tapSquash(motion);
+    const w = ((img.width * height) / img.height) * (1 + 0.06 * q);
+    const hh = height * (1 - 0.08 * q);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, Math.round(cx - w / 2), Math.round(bottom - height), Math.round(w), Math.round(height));
+    ctx.drawImage(img, Math.round(cx - w / 2), Math.round(bottom - hh), Math.round(w), Math.round(hh));
     return;
   }
   // 佔位圖：以整數倍放大，保持像素銳利

@@ -7,8 +7,8 @@ import { go, type Scene } from '../router';
 import { mainPet, passTime, resetSave, save, state } from '../state';
 import { h, toast } from '../ui';
 
-const ROOM = 64; // 房間以 64 格像素畫
-const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
+export const ROOM = 64; // 房間以 64 格像素畫
+export const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
 const TICK_MS = 5000;
 
 export function homeScene(): Scene {
@@ -94,7 +94,7 @@ export function homeScene(): Scene {
         'nav',
         { className: 'nav' },
         h('button', { textContent: '📷 拍照', onclick: soon('拍照') }),
-        h('button', { textContent: '🥤 搖飲料', onclick: soon('搖飲料') }),
+        h('button', { textContent: '🥤 搖飲料', onclick: () => go('shake') }),
         h('button', { textContent: '🛍️ 商店', onclick: soon('商店') }),
         h('button', { textContent: '📒 相簿', onclick: soon('相簿') }),
       );
@@ -149,7 +149,7 @@ export function homeScene(): Scene {
   };
 }
 
-function drawRoom(ctx: CanvasRenderingContext2D): void {
+export function drawRoom(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = '#fde7e4';
   ctx.fillRect(0, 0, ROOM, ROOM);
   // 窗戶

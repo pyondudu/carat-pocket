@@ -115,3 +115,29 @@ canvas.room {
 .sheet tr > th:first-child { text-align: right; white-space: nowrap; font-size: 0.62rem; }
 .sheet td { padding: 0; }
 .sheet canvas { width: 96px; max-width: 15vw; height: auto; display: block; }
+
+/* 搖飲料 */
+.shake-panel { display: flex; flex-direction: column; gap: 10px; }
+.shake-panel .hint { display: flex; justify-content: space-between; gap: 8px; }
+.ings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ing { display: flex; align-items: center; gap: 6px; padding: 8px 6px; font-size: 0.85rem; }
+.ing i { width: 14px; height: 14px; flex: none; border: 2px solid var(--line); border-radius: 4px; background: var(--c); }
+.ing.special { background: #fff7e0; }
+.ing.on { background: var(--pink); transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.shake-info { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.shake-info .left { margin-right: auto; color: var(--muted); }
+.taps { font-size: 2.4rem; line-height: 1; }
+.shake-btn { font-size: 2rem; font-weight: 700; padding: 28px 0; background: var(--pink); touch-action: manipulation; }
+.result { display: flex; align-items: center; gap: 16px; }
+.result canvas { flex: none; }
+.result h2 { margin: 0; }
+.result p { margin: 4px 0; }
+.stars { color: #e0a100; font-weight: 700; }
+.gain { font-weight: 700; font-size: 1.1rem; }
+.new { color: #d0457a; font-weight: 700; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row .primary { margin-top: 0; }
+.codex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.codex-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.72rem; }
+.codex-item small { color: var(--muted); font-size: 0.65rem; }
+.codex-item.unknown strong { color: var(--muted); }

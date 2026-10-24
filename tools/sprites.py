@@ -29,7 +29,7 @@ RAW_DIR = os.path.join(ROOT, "assets-src", "raw")
 CANVAS = (300, 280)
 HEIGHT = 256  # 開心版（扣掉藍色 Z／眼淚）縮放後的高度
 STYLE_REF = os.path.join(RAW_DIR, "tamtam_happy.png")  # 已核准的畫風基準
-FROM_HAPPY = {("choitcherry", "sad"), ("choitcherry", "sleep"), ("shuasum", "sad"), ("shuasum", "sleep"),
+FROM_HAPPY = {("choitcherry", "sad"), ("choitcherry", "sleep"), ("shuasumi", "sad"), ("shuasumi", "sleep"),
               ("thepalee", "sad"), ("foxdungee", "sleep"), ("ppyopuli", "sleep"), ("ppyopuli", "sad"), ("nonver", "sad"), ("nonver", "sleep"),
               ("chandalee", "sad"), ("chandalee", "sleep"),
               ("thepalee", "sleep"), ("foxdungee", "sad"), ("kimja", "sad"), ("doa", "sad"), ("kimja", "sleep"), ("doa", "sleep"),
@@ -40,14 +40,14 @@ NO_OFFICIAL_COLOR = {"tamtam", "kimja"}  # 不對照官方圖校色（TAMTAM 已
 # 參考圖：「全員站姿」（172931）裁全身、「全員頭像」（172856）裁臉
 BODY_SRC, HEAD_SRC = "172931", "172856"
 BODY_BOX = {
-    "choitcherry": (100, 122, 192, 300), "jjongtoram": (212, 148, 318, 300), "shuasum": (338, 172, 432, 300),
+    "choitcherry": (100, 122, 192, 300), "jjongtoram": (212, 148, 318, 300), "shuasumi": (338, 172, 432, 300),
     "ocl": (462, 122, 548, 300), "tamtam": (568, 168, 672, 300), "foxdungee": (148, 338, 252, 480),
     "ppyopuli": (282, 392, 382, 480), "thepalee": (408, 368, 492, 480), "kimja": (512, 302, 648, 480),
     "doa": (142, 542, 262, 665), "bboogyuli": (282, 542, 378, 665), "nonver": (392, 502, 512, 665),
     "chandalee": (532, 538, 628, 665),
 }
 HEAD_BOX = {
-    "choitcherry": (192, 38, 292, 168), "jjongtoram": (312, 42, 428, 162), "shuasum": (448, 62, 568, 162),
+    "choitcherry": (192, 38, 292, 168), "jjongtoram": (312, 42, 428, 162), "shuasumi": (448, 62, 568, 162),
     "ocl": (598, 32, 688, 178), "tamtam": (182, 212, 302, 308), "foxdungee": (312, 208, 432, 312),
     "ppyopuli": (452, 208, 562, 302), "thepalee": (588, 212, 702, 302), "kimja": (112, 332, 232, 482),
     "doa": (248, 368, 382, 462), "bboogyuli": (402, 358, 522, 462), "nonver": (532, 358, 652, 462),
@@ -70,7 +70,7 @@ LOOKS = {
                   "brown hair bangs drawn as three brown stripes on the forehead. Face: both eyes the same, two happy upward-curved eyes, "
                   "a small open smiling mouth, pink blush on both cheeks. Body: small pastel-pink costume body with a white oval belly, "
                   "one small hand raised waving. {chibi}",
-    "shuasum": "SHUASUM, a fawn deer in light pastel peach-orange and cream. Head: big round head, pale peach-orange on top; the lower "
+    "shuasumi": "SHUASUMI, a fawn deer in light pastel peach-orange and cream. Head: big round head, pale peach-orange on top; the lower "
                "half of the face (both cheeks and the muzzle) is cream-white; a small cream V-shaped mark on the forehead, two short "
                "reddish-brown antlers, big rounded ears that are orange outside and cream inside. Face: big shiny black eyes, each with "
                "two little flicked eyelashes at the outer corner, tiny black nose, small open smiling mouth. Body: small peach-orange "

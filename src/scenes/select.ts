@@ -13,7 +13,7 @@ export function selectScene(): Scene {
       const header = h(
         'header',
         { className: 'bar' },
-        h('button', { className: 'ghost', textContent: '← 返回', onclick: () => go(firstTime ? 'intro' : 'home') }),
+        h('button', { className: 'secondary', textContent: '← 返回', onclick: () => go(firstTime ? 'intro' : 'home') }),
         h('h1', { textContent: firstTime ? '選擇自己的本命吧！' : '換主角' }),
       );
       const hint = h('p', {

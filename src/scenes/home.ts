@@ -98,7 +98,7 @@ export function homeScene(): Scene {
               return `${char.specialFood}！最喜歡了！`;
             }),
           ),
-          h('button', { className: 'ghost', textContent: '🛍️ 去商店買', onclick: () => (close(), go('shop')) }),
+          h('button', { className: 'secondary', textContent: '🛍️ 去商店買', onclick: () => (close(), go('shop')) }),
         );
       };
 
@@ -114,7 +114,7 @@ export function homeScene(): Scene {
             h('h2', { textContent: `${name} 作客中` }),
             h('p', { textContent: `${char.name} 和 ${name} 玩得很開心！` }),
             h('button', {
-              className: 'ghost',
+              className: 'secondary',
               textContent: `請 ${name} 先回家`,
               onclick: () => {
                 state.guest = null;

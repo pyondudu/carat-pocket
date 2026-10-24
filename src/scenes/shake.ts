@@ -166,10 +166,10 @@ export function shakeScene(): Scene {
           h(
             'header',
             { className: 'bar' },
-            h('button', { className: 'ghost', textContent: '← 房間', onclick: () => go('home') }),
+            h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go('home') }),
             h('h1', { textContent: '搖飲料' }),
             coins,
-            h('button', { className: 'ghost', textContent: '📖 圖鑑', onclick: showCodex }),
+            h('button', { className: 'secondary', textContent: '📖 圖鑑', onclick: showCodex }),
           ),
           canvas,
           panel,

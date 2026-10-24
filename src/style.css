@@ -39,7 +39,9 @@ button {
 }
 button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
 button:disabled { opacity: 0.5; cursor: default; }
-button.ghost { border: none; box-shadow: none; background: none; padding: 6px; color: var(--muted); }
+/* 次要按鈕（返回、圖鑑、去商店…）：比主要按鈕小，但一樣有框線和陰影，看得出可以點 */
+button.secondary { padding: 6px 12px; font-size: 0.9rem; background: #eef2fb; white-space: nowrap; }
+.modal button.secondary { margin-top: 12px; }
 button.primary { background: var(--pink); width: 100%; font-weight: 700; margin-top: 12px; }
 
 canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }

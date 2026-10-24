@@ -101,7 +101,7 @@ export function shopScene(): Scene {
           h(
             'header',
             { className: 'bar' },
-            h('button', { className: 'ghost', textContent: '← 房間', onclick: () => go('home') }),
+            h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go('home') }),
             h('h1', { textContent: '商店' }),
             coins,
           ),

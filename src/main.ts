@@ -7,6 +7,7 @@ import { selectScene } from './scenes/select';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
+import { setupPwa } from './update';
 import { awayMessage, catchUp, mainPet, save, state } from './state';
 import { getCharacter } from './data/characters';
 import { h, modal, toast } from './ui';
@@ -40,3 +41,5 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') save();
   else welcomeBack();
 });
+
+setupPwa();

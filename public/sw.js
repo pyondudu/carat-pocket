@@ -1,0 +1,37 @@
+// 快取程式：第一次打開後把網頁和角色圖存在手機裡，之後打開很快、沒網路也能玩
+// 首頁先上網抓（才拿得到新版），抓不到才用快取；其他檔案先用快取、背景再更新
+const CACHE = 'carat-pocket';
+
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+
+self.addEventListener('fetch', (e) => {
+  const req = e.request;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin || url.pathname.endsWith('version.json')) return;
+  if (req.mode === 'navigate') {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then((hit) => hit ?? caches.match('./'))),
+    );
+    return;
+  }
+  e.respondWith(
+    caches.open(CACHE).then((c) =>
+      c.match(req).then((hit) => {
+        const fresh = fetch(req)
+          .then((res) => {
+            if (res.ok) c.put(req, res.clone());
+            return res;
+          })
+          .catch(() => hit);
+        return hit ?? fresh;
+      }),
+    ),
+  );
+});

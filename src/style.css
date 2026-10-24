@@ -180,3 +180,6 @@ canvas.room {
 
 /* 下載角色圖時 */
 .loading { text-align: center; margin-top: 40vh; color: var(--muted); }
+
+/* 有新版本的提示（固定在畫面下方） */
+.update-banner { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 50; background: #92a8d1; color: #fff; font-weight: bold; padding: 12px 20px; white-space: nowrap; }

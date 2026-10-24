@@ -51,5 +51,5 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [x] 4.5 邀請夥伴作客：每次 50 金幣、待 2 小時，兩隻一起縮小並排；客人在時本命心情只掉一半；離線回來會說誰來玩過
 - [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色表情已完成，O.C.L 以外改為底圖＋程式五官，會呼吸、眨眼、互動時跳；食物、房間等素材待做）
 - [ ] 6. PWA（manifest + service worker）
-- [ ] 7. 部署到免費 HTTPS 網址分享給朋友
+- [x] 7. 部署到免費 HTTPS 網址分享給朋友：GitHub Pages https://pyondudu.github.io/carat-pocket/（2026-10-24）
 - [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.06 手錶開發板（帶電池版，已下單，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒

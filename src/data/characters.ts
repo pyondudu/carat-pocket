@@ -46,7 +46,7 @@ export const CHARACTERS: Character[] = [
     ingredient: '伯爵茶', specialFood: '牛排', unlockCoins: 400, heightCm: 25,
   },
   {
-    id: 'ocl', name: 'O.C.L', nameKo: '문열어, 문닫아, 문잠가', member: 'JUN', animal: '三隻疊疊貓',
+    id: 'ocl', name: 'O.C.L', nameKo: '문열어, 문닫아, 문잠가', member: 'JUN', animal: '疊疊貓',
     shape: 'stack', color: '#c4c4c6', accent: '#f6f6f6',
     favoriteFood: '橘子、檸檬、桃子', hobby: '運動、讀書、吃火鍋',
     ingredient: '水蜜桃', specialFood: '螺螄粉', unlockCoins: 400, heightCm: 32,

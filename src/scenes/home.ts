@@ -222,7 +222,7 @@ export function homeScene(): Scene {
             onclick: () => {
               state.unlocked = CHARACTERS.map((c) => c.id);
               save();
-              toast('13 隻全部解鎖了');
+              toast('13 個角色全部解鎖了');
             },
           }),
           h('button', { textContent: '🗑️ 重來', onclick: () => (resetSave(), go('select')) }),

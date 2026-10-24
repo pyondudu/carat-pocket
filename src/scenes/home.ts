@@ -3,7 +3,7 @@
 import { CHARACTERS, getCharacter } from '../data/characters';
 import { INVITE_PRICE } from '../data/shop';
 import { characterCanvas, drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
-import { doAction, feedSpecial, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
+import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
 import { h, modal, toast } from '../ui';
@@ -112,7 +112,7 @@ export function homeScene(): Scene {
           const close = modal(
             characterCanvas(getCharacter(g.id)),
             h('h2', { textContent: `${name} 作客中` }),
-            h('p', { textContent: `有朋友陪，${char.name} 的心情掉得比較慢。` }),
+            h('p', { textContent: `${char.name} 和 ${name} 玩得很開心！` }),
             h('button', {
               className: 'ghost',
               textContent: `請 ${name} 先回家`,
@@ -128,6 +128,7 @@ export function homeScene(): Scene {
           return;
         }
         if (pet.sleeping) return toast(`噓…${char.name} 正在睡覺，起床再邀請吧`);
+        if (pet.stats.energy < INVITE_ENERGY) return toast(`${char.name} 太累了，先睡一下再邀請朋友吧`);
         const friends = CHARACTERS.filter((c) => c.id !== char.id && state.unlocked.includes(c.id));
         if (!friends.length) {
           const close = modal(
@@ -144,17 +145,18 @@ export function homeScene(): Scene {
             if (state.coins < INVITE_PRICE) return toast(`金幣不夠，還差 ${INVITE_PRICE - state.coins}，去搖飲料賺吧`);
             state.coins -= INVITE_PRICE;
             state.guest = { id: c.id, until: Date.now() + GUEST_HOURS * 3_600_000 };
+            applyInvite(pet);
             hopAt = guestHopAt = performance.now();
             save();
             refresh();
             close();
-            toast(`${c.name} 來玩了！`);
+            toast(`${c.name} 來玩了！心情 +${INVITE_MOOD}、體力 −${INVITE_ENERGY}`);
           };
           return tile;
         });
         const close = modal(
           h('h2', { textContent: '邀請誰來玩？' }),
-          h('p', { className: 'hint', textContent: `每次 ${INVITE_PRICE} 🪙，會待 ${GUEST_HOURS} 小時，這段時間 ${char.name} 的心情掉一半。目前有 ${state.coins} 🪙` }),
+          h('p', { className: 'hint', textContent: `每次 ${INVITE_PRICE} 🪙，朋友會待 ${GUEST_HOURS} 小時。來玩時心情 +${INVITE_MOOD}、體力 −${INVITE_ENERGY}。目前有 ${state.coins} 🪙` }),
           h('div', { className: 'grid' }, ...tiles),
         );
       };

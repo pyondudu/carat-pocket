@@ -110,14 +110,10 @@ const FOOD_REGEN_CAP = 3;
 /** 作客停留多久 */
 export const GUEST_HOURS = 2;
 
-/** 經過 ms 毫秒（到現在為止）：主角數值衰減＋自動補食物；有客人的那段時間心情掉一半 */
-export function passTime(ms: number, now = Date.now()): void {
+/** 經過 ms 毫秒：主角數值衰減＋自動補食物 */
+export function passTime(ms: number): void {
   const pet = mainPet();
-  if (pet) {
-    const withGuest = state.guest ? Math.min(ms, Math.max(0, state.guest.until - (now - ms))) : 0;
-    applyElapsed(pet, withGuest, 0.5);
-    applyElapsed(pet, ms - withGuest);
-  }
+  if (pet) applyElapsed(pet, ms);
   if (state.food >= FOOD_REGEN_CAP) {
     state.foodProgress = 0;
     return;
@@ -134,7 +130,7 @@ export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; 
   if (!pet) return null;
   const elapsed = Math.max(0, now - state.lastSeen);
   const before = { ...pet.stats };
-  passTime(elapsed, now);
+  passTime(elapsed);
   state.lastSeen = now;
   return { elapsed, before, guestLeft: sendGuestHome(now) };
 }

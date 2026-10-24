@@ -31,12 +31,12 @@ export function newPet(): PetState {
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
-/** 依經過的毫秒數更新數值（直接修改 pet）；moodScale：心情下降的倍數（有客人時 0.5） */
-export function applyElapsed(pet: PetState, ms: number, moodScale = 1): void {
+/** 依經過的毫秒數更新數值（直接修改 pet） */
+export function applyElapsed(pet: PetState, ms: number): void {
   const h = ms / 3_600_000;
   const s = pet.stats;
   s.hunger = clamp(s.hunger + DECAY_PER_HOUR.hunger * h);
-  s.mood = clamp(s.mood + DECAY_PER_HOUR.mood * moodScale * h);
+  s.mood = clamp(s.mood + DECAY_PER_HOUR.mood * h);
   s.clean = clamp(s.clean + DECAY_PER_HOUR.clean * h);
   s.energy = clamp(s.energy + (pet.sleeping ? SLEEP_ENERGY_PER_HOUR : DECAY_PER_HOUR.energy) * h);
   // 睡飽自動起床
@@ -66,6 +66,15 @@ export function shakeBlocked(pet: PetState): string | null {
   if (pet.sleeping) return '噓…正在睡覺，起床再來搖吧';
   if (pet.stats.energy < SHAKE_ENERGY) return '太累了，先睡一下再來搖吧';
   return null;
+}
+
+/** 邀請朋友來玩：心情 +20、體力 −15（使用者 2026-10-24 決定：朋友來很開心，但陪玩會累） */
+export const INVITE_MOOD = 20;
+export const INVITE_ENERGY = 15;
+
+export function applyInvite(pet: PetState): void {
+  pet.stats.mood = clamp(pet.stats.mood + INVITE_MOOD);
+  pet.stats.energy = clamp(pet.stats.energy - INVITE_ENERGY);
 }
 
 /** 搖完一杯：體力 −10、心情 +5 */

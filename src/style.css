@@ -171,8 +171,10 @@ canvas.room {
 .feed-option small { color: var(--muted); }
 
 /* 開頭說明 */
+/* 標題的像素字：Silkscreen Bold（SIL Open Font License，Jason Kottke），只取「Carat Pocket」用到的字母，放在網站裡沒網路也能顯示 */
+@font-face { font-family: 'Silkscreen'; font-weight: 700; src: url('./fonts/silkscreen-title.woff2') format('woff2'); font-display: swap; }
 .intro { text-align: center; }
-.intro-title { font-size: 2rem; margin: 12px 0 0; color: #c2607a; letter-spacing: 1px; }
+.intro-title { font-family: 'Silkscreen', system-ui, sans-serif; font-weight: 700; font-size: min(2.1rem, 8.6vw); margin: 16px 0 4px; color: #c2607a; letter-spacing: 1px; white-space: nowrap; }
 .intro-logo { display: block; width: 105px; margin: 8px auto 4px; image-rendering: pixelated; }
 .howto { list-style: none; padding: 0; margin: 8px 0 16px; display: grid; gap: 8px; text-align: left; }
 .howto li { display: flex; gap: 10px; align-items: center; background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 8px 12px; }

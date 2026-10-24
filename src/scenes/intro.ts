@@ -27,10 +27,10 @@ export function introScene(): Scene {
           { className: 'screen intro' },
           h('h1', { className: 'intro-title', textContent: 'Carat Pocket' }),
           h('p', { className: 'hint', textContent: '口袋裡的 MINITEEN 電子雞' }),
+          h('p', { className: 'disclaimer', textContent: '（SEVENTEEN MINITEEN 粉絲二創，非官方、非營利）\n存檔只在你自己的瀏覽器裡' }),
           h('img', { className: 'intro-logo', src: './icons/diamond.png', alt: '' }),
           howToPlay(),
           h('button', { className: 'primary start', textContent: '開始遊戲', onclick: () => go('select') }),
-          h('p', { className: 'disclaimer', textContent: 'SEVENTEEN MINITEEN 粉絲二創，非官方、非營利。存檔只在你自己的瀏覽器裡。' }),
         ),
       );
     },

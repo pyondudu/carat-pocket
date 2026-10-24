@@ -174,7 +174,7 @@ canvas.room {
 .howto strong { display: block; }
 .howto small { color: var(--muted); }
 .intro .start { width: 100%; font-size: 1.15rem; padding: 14px; }
-.disclaimer { font-size: 0.75rem; color: var(--muted); margin-top: 14px; }
+.disclaimer { font-size: 0.75rem; color: var(--muted); margin: -6px 0 0; white-space: pre-line; line-height: 1.6; }
 .bar .help { padding: 2px 10px; font-weight: bold; }
 
 /* 下載角色圖時 */

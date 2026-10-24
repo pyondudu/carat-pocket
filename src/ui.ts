@@ -12,6 +12,12 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   return el;
 }
 
+/** 食物圖示：一般是表情符號；'img:名稱' 是 public/icons/food/ 的像素圖（沒有合適表情符號的食物，例如小籠包） */
+export function foodIcon(icon: string): Node {
+  if (!icon.startsWith('img:')) return document.createTextNode(icon);
+  return h('img', { className: 'food-icon', src: `./icons/food/${icon.slice(4)}.png`, alt: '' });
+}
+
 let toastTimer = 0;
 
 export function toast(msg: string): void {

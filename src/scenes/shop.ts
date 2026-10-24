@@ -5,7 +5,7 @@ import { FOOD_PRICE, SPECIAL_FOOD_PRICE } from '../data/shop';
 import { characterCanvas } from '../draw';
 import { go, type Scene } from '../router';
 import { save, state } from '../state';
-import { h, modal, toast } from '../ui';
+import { foodIcon, h, modal, toast } from '../ui';
 
 export function shopScene(): Scene {
   return {
@@ -32,7 +32,7 @@ export function shopScene(): Scene {
         h(
           'div',
           { className: 'shop-item' },
-          h('span', { className: 'icon', textContent: icon }),
+          h('span', { className: 'icon' }, foodIcon(icon)),
           h('div', { className: 'info' }, h('strong', { textContent: name }), h('small', { textContent: note }), count),
           h('button', { textContent: `${price} 🪙`, onclick: buy }),
         );

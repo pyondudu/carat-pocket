@@ -199,3 +199,6 @@ canvas.room {
 
 /* 錢包不換行（窄螢幕時金幣和數字才不會上下分開） */
 .wallet, .wallet span { white-space: nowrap; }
+
+/* 像素食物圖示，大小跟表情符號一樣 */
+.food-icon { width: 1.15em; height: 1.15em; vertical-align: -0.2em; image-rendering: pixelated; }

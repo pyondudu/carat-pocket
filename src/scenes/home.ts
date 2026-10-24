@@ -6,7 +6,7 @@ import { characterCanvas, contentBox, drawCharacter, hasRig, hasSprite, isHoppin
 import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
-import { h, modal, toast } from '../ui';
+import { foodIcon, h, modal, toast } from '../ui';
 import { howToPlay } from './intro';
 
 export const ROOM = 64; // 房間以 64 格像素畫
@@ -38,7 +38,7 @@ export function homeScene(): Scene {
 
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
-        food.textContent = `🍙 ${state.food}${state.specialFood ? ` ${char.specialIcon} ${state.specialFood}` : ''}`;
+        food.replaceChildren(`🍙 ${state.food}`, ...(state.specialFood ? [' ', foodIcon(char.specialIcon), ` ${state.specialFood}`] : []));
         for (const [k, fill] of bars) {
           const v = pet.stats[k];
           fill.style.width = `${v}%`;
@@ -76,8 +76,8 @@ export function homeScene(): Scene {
         tick();
         if (pet.sleeping) return toast('噓…正在睡覺');
         if (state.food <= 0 && state.specialFood <= 0) return toast('沒有食物了，去商店買吧（每 4 小時也會自動補 1 個）');
-        const option = (label: string, count: number, note: string, eat: () => string) => {
-          const b = h('button', { className: 'feed-option', disabled: count <= 0 }, h('strong', { textContent: `${label} ×${count}` }), h('small', { textContent: note }));
+        const option = (icon: string, label: string, count: number, note: string, eat: () => string) => {
+          const b = h('button', { className: 'feed-option', disabled: count <= 0 }, h('strong', {}, foodIcon(icon), ` ${label} ×${count}`), h('small', { textContent: note }));
           b.onclick = () => {
             toast(eat());
             hopAt = performance.now();
@@ -92,11 +92,11 @@ export function homeScene(): Scene {
           h(
             'div',
             { className: 'feed-options' },
-            option('🍙 紫菜飯糰', state.food, '飽足 +30', () => {
+            option('🍙', '紫菜飯糰', state.food, '飽足 +30', () => {
               state.food--;
               return doAction(pet, 'feed');
             }),
-            option(`${char.specialIcon} ${char.specialFood}`, state.specialFood, '飽足 +40、心情 +30', () => {
+            option(char.specialIcon, char.specialFood, state.specialFood, '飽足 +40、心情 +30', () => {
               state.specialFood--;
               feedSpecial(pet);
               return `${char.specialFood}！最喜歡了！`;

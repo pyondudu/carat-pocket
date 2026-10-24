@@ -183,6 +183,7 @@ canvas.room {
 .howto small { color: var(--muted); }
 .intro .start { width: 100%; font-size: 1.15rem; padding: 14px; }
 .disclaimer { font-size: 0.75rem; color: var(--muted); margin: -6px 0 0; white-space: pre-line; line-height: 1.6; }
+.bar .pixel-title { font-family: 'Silkscreen', system-ui, sans-serif; font-weight: 700; font-size: clamp(0.75rem, 3.6vw, 1rem); color: #c2607a; letter-spacing: 0.5px; white-space: nowrap; margin: 0; }
 .bar .help { padding: 4px 10px; font-size: 0.8rem; white-space: nowrap; background: #fff3d6; }
 
 /* 下載角色圖時 */
@@ -195,3 +196,6 @@ canvas.room {
 /* 邀請選單：角色少的時候也置中 */
 .invite-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 10px; }
 .invite-grid .tile { width: calc((100% - 20px) / 3); }
+
+/* 錢包不換行（窄螢幕時金幣和數字才不會上下分開） */
+.wallet, .wallet span { white-space: nowrap; }

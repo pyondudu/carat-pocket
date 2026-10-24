@@ -245,7 +245,7 @@ export function homeScene(): Scene {
           h(
             'header',
             { className: 'bar' },
-            h('h1', { textContent: char.name }),
+            h('h1', { className: 'pixel-title', textContent: 'Carat Pocket' }),
             h('button', { className: 'help', textContent: '📖 玩法說明', onclick: () => modal(h('h2', { textContent: '怎麼玩' }), howToPlay()) }),
             h('div', { className: 'wallet' }, coins, food),
           ),

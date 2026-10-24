@@ -175,7 +175,7 @@ canvas.room {
 .howto small { color: var(--muted); }
 .intro .start { width: 100%; font-size: 1.15rem; padding: 14px; }
 .disclaimer { font-size: 0.75rem; color: var(--muted); margin: -6px 0 0; white-space: pre-line; line-height: 1.6; }
-.bar .help { padding: 4px 10px; font-size: 0.8rem; white-space: nowrap; }
+.bar .help { padding: 4px 10px; font-size: 0.8rem; white-space: nowrap; background: #fff3d6; }
 
 /* 下載角色圖時 */
 .loading { text-align: center; margin-top: 40vh; color: var(--muted); }

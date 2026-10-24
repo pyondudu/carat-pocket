@@ -110,7 +110,7 @@ export function shopScene(): Scene {
             'section',
             { className: 'shop-section' },
             h('h2', { textContent: '解鎖夥伴' }),
-            h('p', { className: 'hint', textContent: '解鎖夥伴後，可以邀請牠到房間作客，並獲得牠的專屬原料。' }),
+            h('p', { className: 'hint', textContent: `每位夥伴 ${CHARACTERS[0].unlockCoins} 🪙。解鎖後可以邀請他到房間作客，並獲得他的專屬原料。` }),
             partners,
           ),
         ),

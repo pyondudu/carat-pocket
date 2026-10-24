@@ -132,7 +132,7 @@ export function homeScene(): Scene {
         if (!friends.length) {
           const close = modal(
             h('h2', { textContent: '還沒有夥伴' }),
-            h('p', { textContent: '去商店解鎖夥伴，就可以邀請牠們來玩了。' }),
+            h('p', { textContent: '去商店解鎖夥伴，就可以邀請他們來玩了。' }),
             h('button', { className: 'primary', textContent: '🛍️ 去商店', onclick: () => (close(), go('shop')) }),
           );
           return;

@@ -1,8 +1,8 @@
 // 寵物房間：Canvas 畫房間與主角，DOM 放數值條與動作按鈕
 
-import { CHARACTERS, getCharacter } from '../data/characters';
+import { CHARACTERS, getCharacter, type Character } from '../data/characters';
 import { INVITE_PRICE } from '../data/shop';
-import { characterCanvas, drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
+import { characterCanvas, contentBox, drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
 import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
@@ -264,13 +264,14 @@ export function homeScene(): Scene {
         const bottom = (ROOM - 7) * ZOOM;
         const g = guest();
         if (g) {
-          // 有客人：兩隻一樣大、一起縮小，本命在左、客人在右
-          drawCharacter(ctx, char, mood, 88, bottom - bounce * ZOOM, GUEST_SIZE, motion);
+          // 有客人：照娃娃的實際身高比例畫，本命在左、客人在右
+          const [ma, ga] = pairLayout(char, g, bottom);
+          drawCharacter(ctx, char, mood, ma.cx, ma.bottom - bounce * ZOOM, ma.height, motion);
           // 客人的時間錯開，才不會跟本命同時呼吸、眨眼
           const off = 1700;
           const gm: Motion = { t: t + off, hopAt: guestHopAt === undefined ? undefined : guestHopAt + off };
           const gBounce = hasRig(g) ? 0 : Math.floor((t + off) / 500) % 2;
-          drawCharacter(ctx, g, 'happy', 170, bottom - gBounce * ZOOM, GUEST_SIZE, gm);
+          drawCharacter(ctx, g, 'happy', ga.cx, ga.bottom - gBounce * ZOOM, ga.height, gm);
         } else {
           drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, bottom - bounce * ZOOM, sprite ? 168 : 128, motion);
         }
@@ -298,8 +299,32 @@ export function homeScene(): Scene {
   };
 }
 
-/** 有客人時兩隻角色的高度 */
-const GUEST_SIZE = 116;
+/** 兩隻同框時，比較高的那隻畫多高（角色本身，不含圖片留白）、兩隻之間的空隙、最多佔多寬 */
+const PAIR_TALLEST = 112;
+const PAIR_GAP = 6;
+const PAIR_MAX_WIDTH = 240;
+
+/** 兩隻同框的位置：照 heightCm 比例縮放，腳底踩同一條線，水平置中；回傳給 drawCharacter 用的中心、底部、圖片高度 */
+function pairLayout(a: Character, b: Character, floor: number) {
+  const boxes = [contentBox(a), contentBox(b)];
+  const cms = [a.heightCm, b.heightCm];
+  // 一公分幾 px：最高的那隻用滿 PAIR_TALLEST，太寬就整體縮小
+  let k = PAIR_TALLEST / Math.max(...cms);
+  const widthAt = (k: number) =>
+    boxes.reduce((sum, box, i) => sum + (box.right - box.left) * ((cms[i] * k) / (box.bottom - box.top)), 0) + PAIR_GAP;
+  if (widthAt(k) > PAIR_MAX_WIDTH) k *= (PAIR_MAX_WIDTH - PAIR_GAP) / (widthAt(k) - PAIR_GAP);
+  const items = boxes.map((box, i) => {
+    const s = (cms[i] * k) / (box.bottom - box.top); // 圖片每 px 畫成幾 px
+    return { s, box, w: (box.right - box.left) * s };
+  });
+  let x = (ROOM * ZOOM - (items[0].w + PAIR_GAP + items[1].w)) / 2;
+  return items.map(({ s, box, w }) => {
+    // drawCharacter 以整張圖的中心和底部對齊，換算回去
+    const cx = x - box.left * s + (box.width * s) / 2;
+    x += w + PAIR_GAP;
+    return { cx, bottom: floor + (box.height - box.bottom) * s, height: box.height * s };
+  });
+}
 
 /** 目前作客的夥伴（時間到但還沒結算的也算在，等下一次 tick 才回家） */
 function guest() {

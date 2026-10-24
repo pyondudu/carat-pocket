@@ -332,6 +332,45 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
   ctx.drawImage(spriteFor(c, pose === 'shake' ? 'happy' : pose), Math.round(cx - size / 2), Math.round(bottom - size), size, size);
 }
 
+export interface Box {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  width: number; // 整張圖的寬高
+  height: number;
+}
+const boxes = new Map<string, Box>();
+
+/** 開心版圖片裡角色實際佔的範圍（圖片像素座標）；有些角色比較矮、底下有留空，同框比身高時要用這個 */
+export function contentBox(c: Character): Box {
+  const cached = boxes.get(c.id);
+  if (cached) return cached;
+  const img = images.get(`${c.id}:happy`);
+  const w = img?.width || 300;
+  const hgt = img?.height || 280;
+  let box: Box = { left: 0, top: 0, right: w, bottom: hgt, width: w, height: hgt };
+  if (img) {
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = hgt;
+    const g = cv.getContext('2d', { willReadFrequently: true })!;
+    g.drawImage(img, 0, 0);
+    const { data } = g.getImageData(0, 0, w, hgt);
+    box = { left: w, top: hgt, right: 0, bottom: 0, width: w, height: hgt };
+    for (let y = 0; y < hgt; y++)
+      for (let x = 0; x < w; x++)
+        if (data[(y * w + x) * 4 + 3] > 40) {
+          box.left = Math.min(box.left, x);
+          box.right = Math.max(box.right, x + 1);
+          box.top = Math.min(box.top, y);
+          box.bottom = Math.max(box.bottom, y + 1);
+        }
+  }
+  boxes.set(c.id, box);
+  return box;
+}
+
 export function hasSprite(c: Character): boolean {
   return imageFor(c, 'happy') !== undefined;
 }

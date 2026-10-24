@@ -28,9 +28,11 @@ export function toast(msg: string): void {
 
 /** 顯示彈出視窗，回傳關閉函式；點背景也會關閉 */
 export function modal(...content: Child[]): () => void {
-  const box = h('div', { className: 'modal' }, ...content);
+  const x = h('button', { className: 'close', textContent: '✕', ariaLabel: '關閉' });
+  const box = h('div', { className: 'modal' }, x, ...content);
   const backdrop = h('div', { className: 'backdrop' }, box);
   const close = () => backdrop.remove();
+  x.onclick = close;
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close();
   });

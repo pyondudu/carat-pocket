@@ -79,6 +79,11 @@ canvas.art { image-rendering: auto; }
   background: var(--card); border: 2px solid var(--line); border-radius: 16px;
   padding: 20px; width: min(100%, 380px); max-height: 90dvh; overflow: auto; text-align: center;
 }
+/* 右上角關閉鈕：sticky，圖鑑捲到下面也按得到 */
+.modal .close {
+  position: sticky; top: 0; float: right; z-index: 1; margin: -10px -10px 0 0;
+  width: 36px; height: 36px; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1;
+}
 .modal h2 { margin: 4px 0 0; }
 .modal .ko { margin: 0 0 8px; color: var(--muted); }
 .modal canvas.big { width: 128px; height: 128px; }
@@ -128,6 +133,7 @@ canvas.room {
 .shake-info .left { margin-right: auto; color: var(--muted); }
 .taps { font-size: 2.4rem; line-height: 1; }
 .shake-btn { font-size: 2rem; font-weight: 700; padding: 28px 0; background: var(--pink); touch-action: manipulation; }
+.shake-btn.ready { font-size: 1.3rem; background: #fff3c4; }
 .result { display: flex; align-items: center; gap: 16px; }
 .result canvas { flex: none; }
 .result h2 { margin: 0; }

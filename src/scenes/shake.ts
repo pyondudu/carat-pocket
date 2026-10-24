@@ -84,25 +84,29 @@ export function shakeScene(): Scene {
       const startShake = () => {
         phase = 'shake';
         taps = 0;
-        const end = performance.now() + SHAKE_SECONDS * 1000;
+        let end = 0; // 第一下才開始倒數
         const count = h('strong', { className: 'taps', textContent: '0' });
-        const left = h('span', { className: 'left' });
-        const btn = h('button', { className: 'shake-btn', textContent: '搖！' });
-        // pointerdown 比 click 快，連點才不會漏
-        btn.onpointerdown = (e) => {
-          e.preventDefault();
-          taps++;
-          tapAt = performance.now();
-          count.textContent = String(taps);
-        };
-        panel.replaceChildren(h('div', { className: 'shake-info' }, left, count, h('span', { textContent: '下' })), btn);
+        const left = h('span', { className: 'left', textContent: `⏱ ${SHAKE_SECONDS.toFixed(1)} 秒` });
+        const btn = h('button', { className: 'shake-btn ready', textContent: '點擊此處開始搖' });
         const tick = () => {
           const ms = Math.max(0, end - performance.now());
           left.textContent = `⏱ ${(ms / 1000).toFixed(1)} 秒`;
           if (ms <= 0) finish();
         };
-        tick();
-        timer = window.setInterval(tick, 100);
+        // pointerdown 比 click 快，連點才不會漏
+        btn.onpointerdown = (e) => {
+          e.preventDefault();
+          if (!end) {
+            end = performance.now() + SHAKE_SECONDS * 1000;
+            btn.textContent = '搖！';
+            btn.classList.remove('ready');
+            timer = window.setInterval(tick, 100);
+          }
+          taps++;
+          tapAt = performance.now();
+          count.textContent = String(taps);
+        };
+        panel.replaceChildren(h('div', { className: 'shake-info' }, left, count, h('span', { textContent: '下' })), btn);
       };
 
       const finish = () => {

@@ -36,8 +36,11 @@ export interface Song {
   sections: Section[];
 }
 
-// 一局約 30 秒（使用者 2026-10-25 選的）：前奏 2 → 主歌 4 → 預備段 2 → 副歌 7 → 結尾 1，共 16 小節
+// 一局約 30 秒（使用者 2026-10-25 選的）：前奏 2 → Drop A 6 → Build-up 2 → Drop B 5 → 結尾 1，共 16 小節
+// 使用者只喜歡 Drop（副歌），前面的傳統主歌、往上爬的音階都嫌老氣，所以整首都用 Drop 的切片主題，不放傳統主歌
 // F 小調，和弦循環 Fm9 → Dbmaj7 → Ab(add9) → Eb；難度：簡單 OK，普通只用八分音符位置（使用者覺得原本普通跳太難）
+const HOOK = ['F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2', 'F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2', 'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 F6:1 Ab6:1 -:2 F6:2', 'Eb6:2 -:1 C6:2 -:1 Bb5:2 -:4 C6:1 Eb6:1 -:2'];
+
 export const SONGS: Song[] = [
   {
     id: 'party',
@@ -45,58 +48,56 @@ export const SONGS: Song[] = [
     bpm: 128,
     sections: [
       {
-        // 前奏：悶悶的和弦，先露一下副歌的切片主題
+        // 前奏：主題先「悶著」放一次（濾波關小），像隔著牆聽到
         bars: 2,
         chords: 'Fm9 Dbmaj7',
-        lead: 'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|-:16',
-        pluck: '..x...x...x...x.|..x...x...x.x.x.',
+        lead: `${HOOK[0]}|${HOOK[1]}`,
+        pluck: '',
         drums: 'intro',
         chart: {
           easy: 'p.......p.......|p...b...p...b...',
-          normal: 'p...p...p...b...|p...b...p...b...',
-          hard: 'p..b..p.p.bb..b.|p.b.b.p.p.b.bbbb',
+          normal: 'p...b...p...b...|p...b...p.b...b.',
+          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.',
         },
       },
       {
-        // 主歌：低音域、從反拍進來的短句，pluck 和弦 3-3-2 切分
-        bars: 4,
-        chords: 'Fm9 Dbmaj7 Abadd9 Eb',
-        lead: '-:2 C5:2 C5:2 Eb5:2 F5:4 Eb5:2 C5:2|-:2 C5:2 C5:2 Eb5:2 F5:2 Ab5:4 F5:2|-:2 Eb5:2 Eb5:2 F5:2 Ab5:4 F5:2 Eb5:2|C5:6 -:2 Bb4:2 C5:2 Eb5:4',
-        pluck: 'x..x..x...x..x..',
-        drums: 'verse',
+        // Drop A：人聲切片風格的短音主題，3-3-2 切分、八度跳躍；supersaw 和弦跟著大鼓吸
+        bars: 6,
+        chords: 'Fm9 Dbmaj7 Abadd9 Eb Fm9 Dbmaj7',
+        lead: HOOK.join('|'),
+        pluck: '',
+        drums: 'chorus',
         chart: {
-          easy: 'p.......b.......',
-          normal: 'p.b.b...p...b...|p.b.b...p...b...|p.b.b...p...b...|p.......p...b...',
-          hard: 'p.b.b.p.p...b.b.|p.b.b.p.p.b...b.|p.b.b.p.p...b.b.|p.......p.b.b.bb',
+          easy: 'p...b...p...b...|p.......b.......',
+          normal: 'p...b...p.b...b.|p...b...p.b...b.|p...b...p.b...b.|p.....b.....b...',
+          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.....bb..',
         },
       },
       {
-        // 預備段（Build-up）：往上爬、riser 往上掃，第二小節後半連打，其他樂器抽掉
+        // Build-up：同一個音的切片越打越快（八分 → 十六分）、riser 往上掃，第二小節後半連打，其他樂器抽掉
         bars: 2,
         chords: 'Dbmaj7 Eb',
-        lead: 'Ab5:2 Bb5:2 C6:2 Ab5:2 Bb5:2 C6:2 Eb6:4|F6:4 -:12',
-        pluck: 'x.x.x.x.x.x.x.x.|x.x.............',
+        lead: 'C6:2 C6:2 C6:2 C6:2 Eb6:1 Eb6:1 Eb6:1 Eb6:1 F6:1 F6:1 F6:1 F6:1|F6:4 -:12',
+        pluck: '',
         drums: 'build',
         rolls: [[1, 4, 8]],
         chart: {
           easy: 'p...p...p...p...|p...............',
-          normal: 'p.p.b.b.p.p.b...|p...............',
-          hard: 'pbpbp.b.pbpbp.bb|p...............',
+          normal: 'p.p.p.p.b.b.b.b.|p...............',
+          hard: 'p.p.p.p.bbbbbbbb|p...............',
         },
       },
       {
-        // 副歌（Drop）：人聲切片風格的短音主題，3-3-2 切分、八度跳躍；supersaw 和弦跟著大鼓吸
-        bars: 7,
-        chords: 'Fm9 Dbmaj7 Abadd9 Eb Fm9 Dbmaj7 Dbmaj7/Eb',
-        lead:
-          'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2|F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 F6:1 Ab6:1 -:2 F6:2|Eb6:2 -:1 C6:2 -:1 Bb5:2 -:4 C6:1 Eb6:1 -:2|' +
-          'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2|F6:1 -:2 Eb6:1 -:2 C6:2 Eb6:2 F6:4 -:2',
+        // Drop B：從較高的變奏開始，最後收在 Dbmaj7/Eb 準備回主和弦
+        bars: 5,
+        chords: 'Abadd9 Eb Fm9 Dbmaj7 Dbmaj7/Eb',
+        lead: `${HOOK[2]}|${HOOK[3]}|${HOOK[0]}|${HOOK[1]}|F6:1 -:2 Eb6:1 -:2 C6:2 Eb6:2 F6:4 -:2`,
         pluck: '',
         drums: 'chorus',
         chart: {
-          easy: 'p...b...p...b...',
-          normal: 'p...b...p.b...b.|p...b...p.b...b.|p...b...p.b...b.|p.....b.....b...',
-          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.....bb..',
+          easy: 'p...b...p...b...|p.......b.......',
+          normal: 'p...b...p.b...b.|p.....b.....b...|p...b...p.b...b.|p...b...p.b...b.|p...b...p.b.....',
+          hard: 'p..b..p.p.bp..b.|p..b..p.....bb..|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.b.p...',
         },
       },
       {

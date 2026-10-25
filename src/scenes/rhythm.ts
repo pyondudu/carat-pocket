@@ -1,19 +1,22 @@
-// 節奏應援（預覽版）：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
-// 目前是預覽版：一首原創曲（src/data/songs.ts）分簡單／普通／困難，不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
+// 節奏應援：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
+// 流程（使用者 2026-10-26 定案）：進來先跳說明視窗 → 選難度 → 按開始 → 房間中央 3、2、1 倒數 → 一局約 30 秒 → 結算
+// 一局體力 −20、心情 +10，金幣依得分（src/rhythm.ts）；還沒選本命（#rhythm 預覽）時不給獎勵
 
 import { CHARACTERS } from '../data/characters';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
 import { drawCaratBong, type Glow } from '../drinkart';
-import { audio, heardTime, padSound } from '../audio';
-import { expandChart, LEVEL_LABEL, LEVEL_NOTE, LEVEL_TRAVEL, LEVELS, songBars, SONGS, totalBars, type Level } from '../data/songs';
+import { audio, heardTime, padSound, tone } from '../audio';
+import { expandChart, LEVEL_LABEL, LEVEL_TRAVEL, LEVELS, songBars, SONGS, type Level } from '../data/songs';
 import { playBar } from '../music';
 import { go, type Scene } from '../router';
-import { state } from '../state';
-import { h } from '../ui';
+import { applyRhythm, rhythmBlocked } from '../pet';
+import { RANK_LABEL, scoreOf } from '../rhythm';
+import { mainPet, passTime, save, state } from '../state';
+import { h, modal } from '../ui';
 import { drawClock, drawRoom, NOTE, ROOM, ZOOM } from './home';
 
 const INK = '#2b2b2b';
-const LEAD_IN = 2.5; // 按開始後幾秒第一拍
+const COUNTDOWN = 3; // 按開始後 3、2、1 倒數，倒數完第一拍
 const LANE_H = 15; // 軌道高度（房間格數）
 const JUDGE_X = 9; // 判定圈中心（房間格數）
 const WINDOWS = [
@@ -104,6 +107,40 @@ function drawStage(ctx: CanvasRenderingContext2D, beat: number): void {
   beam(ctx, 27, 0, 0, 56, 14, '#fff1a8');
 }
 
+/** 倒數用的 5×7 像素數字 */
+const BIG_DIGITS: Record<number, string[]> = {
+  1: ['..X..', '.XX..', '..X..', '..X..', '..X..', '..X..', '.XXX.'],
+  2: ['.XXX.', 'X...X', '....X', '...X.', '..X..', '.X...', 'XXXXX'],
+  3: ['XXXX.', '....X', '....X', '.XXX.', '....X', '....X', 'XXXX.'],
+};
+
+/** 房間正中央的倒數圖示：佔房間一半大小的圓牌＋大數字，每秒換數字時彈一下（ctx 是房間格座標） */
+function drawCountdown(ctx: CanvasRenderingContext2D, n: number, p: number): void {
+  const s = 1 + Math.max(0, 0.2 - p) * 1.2; // 剛換數字時大一點再縮回
+  ctx.save();
+  ctx.translate(ROOM / 2, ROOM / 2);
+  ctx.scale(s, s);
+  ctx.globalAlpha = p > 0.85 ? (1 - p) / 0.15 : 1;
+  const r = ROOM / 4;
+  ctx.fillStyle = INK;
+  ctx.beginPath();
+  ctx.arc(0, 0, r + 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#f78fb0';
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fffaf0';
+  ctx.beginPath();
+  ctx.arc(0, 0, r - 2, 0, Math.PI * 2);
+  ctx.fill();
+  const cell = 3;
+  const rows = BIG_DIGITS[n];
+  ctx.fillStyle = '#c2607a';
+  rows.forEach((row, y) => [...row].forEach((ch, x) => ch === 'X' && ctx.fillRect((x - 2.5) * cell, (y - 3.5) * cell, cell, cell)));
+  ctx.restore();
+}
+
 export function rhythmScene(): Scene {
   let raf = 0;
   let timer = 0;
@@ -116,8 +153,15 @@ export function rhythmScene(): Scene {
 
   return {
     mount(root) {
-      // 用本命；還沒選本命（#rhythm 直接開預覽）時用第一個角色
+      // 用本命；還沒選本命（#rhythm 直接開預覽）時用第一個角色、不給獎勵
       const charIndex = Math.max(0, CHARACTERS.findIndex((c) => c.id === state.mainId));
+      const pet = mainPet();
+      if (pet) {
+        // 進來先補算時間，體力才是最新的
+        passTime(Date.now() - state.lastSeen);
+        save();
+      }
+      const coins = h('span', { className: 'coins', textContent: `🪙 ${state.coins}` });
       let playing = false;
       let t0 = 0; // 第一拍的音訊時間
       let scheduledBar = 0;
@@ -125,8 +169,8 @@ export function rhythmScene(): Scene {
       const bars = songBars(song);
       const STEP = 60 / song.bpm / 4; // 16 分音符（秒）
       const BAR = STEP * 16;
-      let level: Level = 'normal';
-      let TRAVEL = LEVEL_TRAVEL[level]; // 音符從右邊出現到判定圈的秒數
+      let level: Level | null = null;
+      let TRAVEL = LEVEL_TRAVEL.normal; // 音符從右邊出現到判定圈的秒數
       const notes: Note[] = [];
       let combo = 0;
       let best = 0;
@@ -206,11 +250,17 @@ export function rhythmScene(): Scene {
       };
 
       const start = (lv: Level) => {
+        if (pet) {
+          passTime(Date.now() - state.lastSeen);
+          if (rhythmBlocked(pet)) return pick();
+        }
         const ac = audio();
         level = lv;
         TRAVEL = LEVEL_TRAVEL[lv];
         playing = true;
-        t0 = ac.currentTime + LEAD_IN;
+        t0 = ac.currentTime + COUNTDOWN;
+        // 倒數的嗶聲：3、2、1
+        for (let k = COUNTDOWN; k >= 1; k--) tone(t0 - k, 880, 0.12, 'triangle', 0.25);
         scheduledBar = 0;
         notes.length = 0;
         for (const n of expandChart(song, lv)) notes.push({ t: n.step * STEP, color: n.color, ...(n.color === 'roll' ? { len: n.steps! * STEP, rolls: 0 } : {}) });
@@ -223,13 +273,29 @@ export function rhythmScene(): Scene {
         panel.replaceChildren(info, h('div', { className: 'pads' }, pad('pink', '粉'), pad('blue', '藍')), h('p', { className: 'hint', textContent: '電腦可以用 F／J 鍵' }));
       };
 
-      // 一局結束：結算畫面（預覽版不給金幣）
+      // 一局結束：算分、給金幣、扣體力、記最高分
       const finish = () => {
         playing = false;
         clearInterval(timer);
+        const lv = level!;
+        const total = expandChart(song, lv).filter((n) => n.color !== 'roll').length;
+        const r = scoreOf(counts, total, lv);
+        let record = false;
+        if (pet) {
+          passTime(Date.now() - state.lastSeen);
+          state.coins += r.coins;
+          applyRhythm(pet);
+          const entry = (state.rhythm[`${song.id}:${lv}`] ??= { best: 0, plays: 0 });
+          entry.plays++;
+          record = r.score > entry.best;
+          entry.best = Math.max(entry.best, r.score);
+          save();
+          coins.textContent = `🪙 ${state.coins}`;
+        }
+        hopAt = performance.now();
         const row = (k: string, v: number) => h('div', { className: 'stat-row' }, h('span', { textContent: k }), h('strong', { textContent: String(v) }));
         panel.replaceChildren(
-          h('h2', { className: 'result-title', textContent: '應援結束！' }),
+          h('div', { className: 'rhythm-rank' }, h('strong', { className: `rank rank-${r.rank}`, textContent: r.rank }), h('div', {}, h('h2', { textContent: RANK_LABEL[r.rank] }), h('p', { textContent: `${LEVEL_LABEL[lv]}・${r.score} 分${record ? '・新紀錄！' : ''}` }))),
           h(
             'div',
             { className: 'rhythm-result' },
@@ -240,29 +306,47 @@ export function rhythmScene(): Scene {
             row('最高連擊', best),
             row('連打', counts.連打),
           ),
-          h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '換難度', onclick: pick }), h('button', { className: 'primary', textContent: `再玩一次（${LEVEL_LABEL[level]}）`, onclick: () => start(level) })),
+          ...(pet ? [h('p', { className: 'gain rhythm-gain', textContent: `+${r.coins} 🪙　體力 −20　心情 +10` })] : []),
+          h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '回房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('button', { className: 'primary', textContent: '再玩一次', onclick: pick })),
         );
       };
 
-      // 選難度：同一首歌三種譜面
+      // 選難度：簡單／普通／困難三顆按鈕，選好再按開始
       function pick(): void {
-        const sec = Math.round(totalBars(song) * BAR);
-        panel.replaceChildren(
-          h('h2', { className: 'result-title', textContent: `♪ ${song.title}` }),
-          h('p', { className: 'hint', textContent: `約 ${sec} 秒・預覽版不扣體力、不給金幣\n請打開聲音（iPhone 要關掉靜音）` }),
-          h('div', { className: 'levels' }, ...LEVELS.map((lv) => h('button', { className: `level ${lv}`, onclick: () => start(lv) }, h('strong', { textContent: LEVEL_LABEL[lv] }), h('small', { textContent: LEVEL_NOTE[lv] })))),
-        );
+        const blocked = pet && rhythmBlocked(pet);
+        if (blocked) {
+          panel.replaceChildren(h('p', { className: 'hint', textContent: blocked }), h('button', { className: 'primary', textContent: '回房間', onclick: () => go('home') }));
+          return;
+        }
+        const startBtn = h('button', { className: 'primary', textContent: pet ? '開始！（體力 −20）' : '開始！', disabled: !level, onclick: () => start(level!) });
+        const buttons = LEVELS.map((lv) => {
+          const b = h('button', { className: `level ${lv}`, textContent: LEVEL_LABEL[lv] });
+          b.onclick = () => {
+            level = lv;
+            for (const x of buttons) x.classList.toggle('on', x === b);
+            startBtn.disabled = false;
+          };
+          b.classList.toggle('on', lv === level);
+          return b;
+        });
+        panel.replaceChildren(h('div', { className: 'levels' }, ...buttons), startBtn);
       }
 
       const char = () => CHARACTERS[charIndex];
 
       pick();
+      // 進來先跳說明視窗
+      const closeIntro = modal(
+        h('h2', { textContent: '🎵 節奏應援' }),
+        h('p', { textContent: '跟著歌曲用按鈕應援吧！\n點選難易程度後開始遊戲' }),
+        h('button', { className: 'primary', textContent: '好！', onclick: () => closeIntro() }),
+      );
 
       root.append(
         h(
           'div',
           { className: 'screen rhythm' },
-          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎵 節奏應援' })),
+          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎵 節奏應援' }), coins),
           stage,
           panel,
         ),
@@ -333,7 +417,7 @@ export function rhythmScene(): Scene {
         while (notes.length && notes[0].t + (notes[0].len ?? 0) < st - 1) notes.shift();
         // 剩餘秒數（跟手搖飲一樣顯示在按鈕上方）
         const left = bars.length * BAR - st;
-        const text = st < 0 ? `準備…${Math.ceil(-st)}` : `⏱ ${Math.max(0, Math.ceil(left))} 秒`;
+        const text = `⏱ ${Math.max(0, Math.ceil(Math.min(left, bars.length * BAR)))} 秒`;
         if (info.textContent !== text) info.textContent = text;
         if (left < -0.8) finish();
       };
@@ -393,6 +477,17 @@ export function rhythmScene(): Scene {
           rctx.strokeText(s, ROOM * ZOOM - 10, 24);
           rctx.fillStyle = '#c2607a';
           rctx.fillText(s, ROOM * ZOOM - 10, 24);
+        }
+        // 倒數 3、2、1：畫在房間正中央
+        if (playing) {
+          const st = songTime();
+          if (st < 0) {
+            // 音訊剛啟動時時鐘可能還落後（st < −3），先停在 3
+            const n = Math.min(COUNTDOWN, Math.ceil(-st));
+            rctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
+            drawCountdown(rctx, n, Math.max(0, n + st));
+            rctx.setTransform(1, 0, 0, 1, 0, 0);
+          }
         }
         drawLane(now);
         raf = requestAnimationFrame(draw);

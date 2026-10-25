@@ -83,6 +83,22 @@ export function applyShake(pet: PetState): void {
   pet.stats.mood = clamp(pet.stats.mood + 5);
 }
 
+/** 節奏應援：比手搖飲累但更開心，體力 −20、心情 +10（使用者 2026-10-26 決定） */
+export const RHYTHM_ENERGY = 20;
+export const RHYTHM_MOOD = 10;
+
+/** 能不能玩節奏應援；不能的話回傳原因 */
+export function rhythmBlocked(pet: PetState): string | null {
+  if (pet.sleeping) return '噓…正在睡覺，起床再來應援吧';
+  if (pet.stats.energy < RHYTHM_ENERGY) return '太累了，先睡一下再來應援吧';
+  return null;
+}
+
+export function applyRhythm(pet: PetState): void {
+  pet.stats.energy = clamp(pet.stats.energy - RHYTHM_ENERGY);
+  pet.stats.mood = clamp(pet.stats.mood + RHYTHM_MOOD);
+}
+
 /** 執行動作，回傳要顯示的訊息 */
 export function doAction(pet: PetState, action: Action): string {
   const s = pet.stats;

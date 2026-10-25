@@ -221,9 +221,15 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .rhythm-result { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 .stat-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #d9cfd6; padding: 4px 2px; }
 .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.level { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; }
-.level strong { font-size: 1.1rem; }
-.level small { font-size: 0.72rem; color: var(--muted); text-wrap: balance; }
+.level { padding: 14px 4px; font-size: 1.1rem; font-weight: 700; }
+.level.on { outline: 3px solid var(--blue); outline-offset: 2px; transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.rhythm-rank { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.rhythm-rank h2, .rhythm-rank p { margin: 0; }
+.rank { font-size: 2.6rem; line-height: 1; width: 1.4em; height: 1.4em; display: grid; place-items: center; border-radius: 50%; border: 3px solid var(--line); background: #fff; }
+.rank-S { background: #ffe58a; }
+.rank-A { background: var(--pink); }
+.rank-B { background: #cfe0f7; }
+.rhythm-gain { text-align: center; margin: 0; }
 .level.easy { background: #fde6ee; }
 .level.normal { background: #ece4fa; }
 .level.hard { background: #e2ebfb; }

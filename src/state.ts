@@ -4,7 +4,7 @@ import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 4; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest
+const VERSION = 5; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
@@ -23,11 +23,13 @@ export interface GameState {
   specialFood: number;
   /** 來房間作客的夥伴；until 是回家的時間 */
   guest: { id: string; until: number } | null;
+  /** 節奏應援紀錄：key 是「曲子 id:難度」，best 最高分、plays 玩過幾次 */
+  rhythm: Record<string, { best: number; plays: number }>;
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, guest: null, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -52,6 +54,10 @@ function load(): GameState {
       if (data.version === 3) {
         data.guest = null;
         data.version = 4;
+      }
+      if (data.version === 4) {
+        data.rhythm = {};
+        data.version = 5;
       }
       if (data.version === VERSION) return renameIds(data);
     }

@@ -1,22 +1,19 @@
 // 應援（預覽版）：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
-// 目前是預覽版（2026-10-25 推上去給使用者手機試）：固定節奏、一局 32 秒、不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
+// 目前是預覽版：一首原創曲（src/data/songs.ts）分簡單／普通／困難，不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
 
 import { CHARACTERS } from '../data/characters';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
 import { drawCaratBong, type Glow } from '../drinkart';
-import { audio, hat, heardTime, kick, midi, padSound, snare, tone } from '../audio';
+import { audio, heardTime, padSound } from '../audio';
+import { expandChart, LEVEL_LABEL, LEVEL_NOTE, LEVEL_TRAVEL, LEVELS, songBars, SONGS, totalBars, type Level } from '../data/songs';
+import { playBar } from '../music';
 import { go, type Scene } from '../router';
 import { state } from '../state';
 import { h } from '../ui';
 import { drawClock, drawRoom, NOTE, ROOM, ZOOM } from './home';
 
 const INK = '#2b2b2b';
-const BPM = 120;
-const STEP = 60 / BPM / 4; // 16 分音符（秒）
-const BAR = STEP * 16;
-const TRAVEL = 1.6; // 音符從右邊出現到判定圈的秒數
-const LEAD_IN = 2; // 按開始後幾秒第一拍
-const SONG_BARS = 16; // 一局幾小節（120 BPM 一小節 2 秒，共 32 秒）
+const LEAD_IN = 2.5; // 按開始後幾秒第一拍
 const LANE_H = 15; // 軌道高度（房間格數）
 const JUDGE_X = 9; // 判定圈中心（房間格數）
 const WINDOWS = [
@@ -33,25 +30,6 @@ interface Note {
   hit?: boolean;
   missed?: boolean;
 }
-
-/** 預覽用的 4 小節循環：粉在大鼓、藍在小鼓，第 4 小節後半是連打；steps＝連打的長度（16 分音符數）
- *  連打結束後至少空一拍才接下一個音符，不然來不及從狂按切回看顏色（使用者 2026-10-25 回報） */
-function barNotes(bar: number): { step: number; color: Note['color']; steps?: number }[] {
-  const n: { step: number; color: Note['color']; steps?: number }[] = [
-    { step: 0, color: 'pink' },
-    { step: 4, color: 'blue' },
-  ];
-  const v = bar % 4;
-  if (v === 3) {
-    n.push({ step: 8, color: 'roll', steps: 4 });
-    return n;
-  }
-  n.push({ step: 8, color: 'pink' }, { step: 12, color: 'blue' });
-  if (v === 1) n.push({ step: 10, color: 'pink' });
-  if (v === 2) n.push({ step: 6, color: 'pink' }, { step: 14, color: 'blue' });
-  return n;
-}
-const BASS = [48, 45, 41, 43]; // C A F G
 
 /** 圓形像素圖：d 為直徑（格），外圈墨線、左上一點反光；ring＝只有白框的判定圈 */
 function dot(d: number, fill: string, ring = false): HTMLCanvasElement {
@@ -143,6 +121,12 @@ export function rhythmScene(): Scene {
       let playing = false;
       let t0 = 0; // 第一拍的音訊時間
       let scheduledBar = 0;
+      const song = SONGS[0];
+      const bars = songBars(song);
+      const STEP = 60 / song.bpm / 4; // 16 分音符（秒）
+      const BAR = STEP * 16;
+      let level: Level = 'normal';
+      let TRAVEL = LEVEL_TRAVEL[level]; // 音符從右邊出現到判定圈的秒數
       const notes: Note[] = [];
       let combo = 0;
       let best = 0;
@@ -171,31 +155,13 @@ export function rhythmScene(): Scene {
       // 軌道放在房間和按鈕之間（使用者 2026-10-25 定案）
       stage.append(room, lane);
 
-      // 排程：提前排好之後小節的音樂和音符；提前量要比音符流動時間長，音符才會從軌道右邊出現，不會在中間突然冒出來
+      // 排程：音樂提前 0.6 秒排進 AudioContext（音符在開始時就整首放好，一定從軌道右邊出現）
       const schedule = () => {
         if (!playing) return;
         const ac = audio();
-        while (scheduledBar < SONG_BARS && t0 + scheduledBar * BAR < ac.currentTime + TRAVEL + 0.5) {
-          const bar = scheduledBar++;
-          const at = t0 + bar * BAR;
-          for (let s = 0; s < 16; s += 2) hat(at + s * STEP, s % 4 === 2 ? 0.09 : 0.05);
-          const root = BASS[bar % 4];
-          for (const s of [0, 3, 6, 8, 11, 14]) tone(at + s * STEP, midi(root), STEP * 1.6, 'triangle', 0.18);
-          // 旋律：簡單的琶音，讓預覽有點歌的感覺
-          const arp = [0, 4, 7, 12, 7, 4, 0, 7];
-          if (bar % 2 === 1) arp.forEach((iv, k) => tone(at + k * 2 * STEP, midi(root + 24 + iv), STEP * 1.5, 'square', 0.035));
-          for (const n of barNotes(bar)) {
-            const t = bar * BAR + n.step * STEP;
-            if (n.color === 'roll') {
-              notes.push({ t, color: 'roll', len: n.steps! * STEP, rolls: 0 });
-              // 連打期間小鼓滾奏，提示要一直按
-              for (let k = 0; k <= n.steps!; k++) snare(at + (n.step + k) * STEP, 0.12 + (k / n.steps!) * 0.2);
-              continue;
-            }
-            notes.push({ t, color: n.color });
-            if (n.color === 'pink') kick(at + n.step * STEP, 0.7);
-            else snare(at + n.step * STEP, 0.3);
-          }
+        while (scheduledBar < bars.length && t0 + scheduledBar * BAR < ac.currentTime + 0.6) {
+          playBar(bars[scheduledBar], t0 + scheduledBar * BAR, STEP);
+          scheduledBar++;
         }
       };
 
@@ -239,12 +205,15 @@ export function rhythmScene(): Scene {
         return b;
       };
 
-      const start = () => {
+      const start = (lv: Level) => {
         const ac = audio();
+        level = lv;
+        TRAVEL = LEVEL_TRAVEL[lv];
         playing = true;
         t0 = ac.currentTime + LEAD_IN;
         scheduledBar = 0;
         notes.length = 0;
+        for (const n of expandChart(song, lv)) notes.push({ t: n.step * STEP, color: n.color, ...(n.color === 'roll' ? { len: n.steps! * STEP, rolls: 0 } : {}) });
         combo = best = 0;
         for (const k of Object.keys(counts) as (keyof typeof counts)[]) counts[k] = 0;
         judge = null;
@@ -271,16 +240,23 @@ export function rhythmScene(): Scene {
             row('最高連擊', best),
             row('連打', counts.連打),
           ),
-          h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '回房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('button', { className: 'primary', textContent: '再玩一次', onclick: start })),
+          h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '換難度', onclick: pick }), h('button', { className: 'primary', textContent: `再玩一次（${LEVEL_LABEL[level]}）`, onclick: () => start(level) })),
         );
       };
 
+      // 選難度：同一首歌三種譜面
+      function pick(): void {
+        const sec = Math.round(totalBars(song) * BAR);
+        panel.replaceChildren(
+          h('h2', { className: 'result-title', textContent: `♪ ${song.title}` }),
+          h('p', { className: 'hint', textContent: `約 ${sec} 秒・預覽版不扣體力、不給金幣\n請打開聲音（iPhone 要關掉靜音）` }),
+          h('div', { className: 'levels' }, ...LEVELS.map((lv) => h('button', { className: `level ${lv}`, onclick: () => start(lv) }, h('strong', { textContent: LEVEL_LABEL[lv] }), h('small', { textContent: LEVEL_NOTE[lv] })))),
+        );
+      }
+
       const char = () => CHARACTERS[charIndex];
 
-      panel.replaceChildren(
-        h('p', { className: 'hint', textContent: '預覽版：配置與手感，不扣體力、不給金幣\n請打開聲音（iPhone 要關掉靜音）' }),
-        h('button', { className: 'primary', textContent: '開始', onclick: start }),
-      );
+      pick();
 
       root.append(
         h(
@@ -356,7 +332,7 @@ export function rhythmScene(): Scene {
         // 清掉已經過去很久的音符
         while (notes.length && notes[0].t + (notes[0].len ?? 0) < st - 1) notes.shift();
         // 剩餘秒數（跟手搖飲一樣顯示在按鈕上方）
-        const left = SONG_BARS * BAR - st;
+        const left = bars.length * BAR - st;
         const text = st < 0 ? `準備…${Math.ceil(-st)}` : `⏱ ${Math.max(0, Math.ceil(left))} 秒`;
         if (info.textContent !== text) info.textContent = text;
         if (left < -0.8) finish();

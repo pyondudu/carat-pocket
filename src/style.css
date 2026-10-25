@@ -220,3 +220,10 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .result-title { text-align: center; margin: 0; }
 .rhythm-result { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
 .stat-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #d9cfd6; padding: 4px 2px; }
+.levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.level { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 4px; }
+.level strong { font-size: 1.1rem; }
+.level small { font-size: 0.72rem; color: var(--muted); text-wrap: balance; }
+.level.easy { background: #fde6ee; }
+.level.normal { background: #ece4fa; }
+.level.hard { background: #e2ebfb; }

@@ -75,12 +75,64 @@ export function tone(t: number, freq: number, dur: number, type: OscillatorType 
   o.stop(t + dur + 0.01);
 }
 
+/** 拍手：三下很快的雜訊疊在一起 */
+export function clap(t: number, peak = 0.35): void {
+  for (const d of [0, 0.011, 0.022]) noiseHit(t + d, 'bandpass', 1500, peak, d === 0.022 ? 0.12 : 0.02);
+}
+
+/** 開放的鈸（比腳踏鈸長） */
+export function openHat(t: number, peak = 0.08): void {
+  noiseHit(t, 'highpass', 6000, peak, 0.18);
+}
+
+/** 銅鈸：段落開頭的一聲 */
+export function crash(t: number, peak = 0.18): void {
+  noiseHit(t, 'highpass', 4500, peak, 1.2);
+}
+
+/** 持續的音：起音快、維持到 dur 的八成再收掉（主旋律用） */
+export function hold(t: number, freq: number, dur: number, type: OscillatorType = 'square', peak = 0.05): void {
+  const o = ac!.createOscillator();
+  o.type = type;
+  o.frequency.value = freq;
+  const g = ac!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.008);
+  g.gain.setValueAtTime(peak, t + dur * 0.8);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur * 0.95);
+  o.connect(g).connect(master!);
+  o.start(t);
+  o.stop(t + dur);
+}
+
+/** 銅管齊奏：鋸齒波和弦經過低通，短促有力 */
+export function brass(t: number, freqs: number[], dur = 0.14, peak = 0.035): void {
+  const f = ac!.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.setValueAtTime(3200, t);
+  f.frequency.exponentialRampToValueAtTime(900, t + dur);
+  const g = ac!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.01);
+  g.gain.setValueAtTime(peak, t + dur * 0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  f.connect(g).connect(master!);
+  for (const fr of freqs) {
+    const o = ac!.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.value = fr;
+    o.connect(f);
+    o.start(t);
+    o.stop(t + dur + 0.01);
+  }
+}
+
 /** 按鍵音：粉＝咚（低）、藍＝咔（高） */
 export function padSound(color: 'pink' | 'blue'): void {
   const t = audio().currentTime;
   if (color === 'pink') {
-    kick(t, 0.6);
-    tone(t, 330, 0.08, 'triangle', 0.15);
+    kick(t, 0.4);
+    tone(t, 330, 0.08, 'triangle', 0.12);
   } else {
     tone(t, 1320, 0.05, 'square', 0.07);
     noiseHit(t, 'bandpass', 3000, 0.25, 0.05);

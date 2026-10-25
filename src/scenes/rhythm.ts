@@ -1,4 +1,4 @@
-// 應援（預覽版）：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
+// 節奏應援（預覽版）：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
 // 目前是預覽版：一首原創曲（src/data/songs.ts）分簡單／普通／困難，不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
 
 import { CHARACTERS } from '../data/characters';
@@ -262,7 +262,7 @@ export function rhythmScene(): Scene {
         h(
           'div',
           { className: 'screen rhythm' },
-          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎵 應援' })),
+          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎵 節奏應援' })),
           stage,
           panel,
         ),

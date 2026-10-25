@@ -253,11 +253,12 @@ export function homeScene(): Scene {
       const nav = h(
         'nav',
         { className: 'nav' },
+        // 順序：手搖飲、節奏應援、待推出、商店（使用者 2026-10-26 指定商店放最右邊）
         h('button', { textContent: '🥤 手搖飲', onclick: () => go('shake') }),
-        h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
-        h('button', { textContent: '🎵 應援', onclick: () => go('rhythm') }),
-        // 最後一格原本是「相簿」（里程碑 2），要做什麼之後再決定，先顯示待推出
+        h('button', { textContent: '🎵 節奏應援', onclick: () => go('rhythm') }),
+        // 原本是「相簿」（里程碑 2），要做什麼之後再決定，先顯示待推出
         h('button', { className: 'soon', textContent: '待推出', onclick: soon }),
+        h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
       );
 
       root.append(

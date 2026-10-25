@@ -146,7 +146,7 @@ export function homeScene(): Scene {
           const tile = h('button', { className: 'tile' }, characterCanvas(c), h('strong', { textContent: c.name }));
           tile.style.setProperty('--c', c.color);
           tile.onclick = () => {
-            if (state.coins < INVITE_PRICE) return toast(`金幣不夠，還差 ${INVITE_PRICE - state.coins}，去搖飲料賺吧`);
+            if (state.coins < INVITE_PRICE) return toast(`金幣不夠，還差 ${INVITE_PRICE - state.coins}，去玩手搖飲賺吧`);
             state.coins -= INVITE_PRICE;
             state.guest = { id: c.id, until: Date.now() + GUEST_HOURS * 3_600_000 };
             applyInvite(pet);
@@ -253,10 +253,10 @@ export function homeScene(): Scene {
       const nav = h(
         'nav',
         { className: 'nav' },
-        h('button', { textContent: '🥤 搖飲料', onclick: () => go('shake') }),
+        h('button', { textContent: '🥤 手搖飲', onclick: () => go('shake') }),
         h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
-        // 後兩格原本是「拍照」「相簿」（里程碑 2），要做什麼之後再決定，先顯示待推出
-        h('button', { className: 'soon', textContent: '待推出', onclick: soon }),
+        h('button', { textContent: '🎵 應援', onclick: () => go('rhythm') }),
+        // 最後一格原本是「相簿」（里程碑 2），要做什麼之後再決定，先顯示待推出
         h('button', { className: 'soon', textContent: '待推出', onclick: soon }),
       );
 
@@ -444,7 +444,7 @@ const DIGITS = [
 ];
 
 /** 牆上的電子鐘：真實時間，24 小時制，冒號每秒閃一次 */
-function drawClock(ctx: CanvasRenderingContext2D, now: Date): void {
+export function drawClock(ctx: CanvasRenderingContext2D, now: Date): void {
   // 放在左上角，不擋角色
   const x0 = 1;
   const y0 = 1;
@@ -501,7 +501,7 @@ function drawTrash(ctx: CanvasRenderingContext2D, clean: number): void {
 }
 
 // 音符像素圖（八分音符），一個字一格
-const NOTE = ['..XXX', '..X.X', '..X..', '..X..', 'XXX..', 'XXX..'];
+export const NOTE = ['..XXX', '..X.X', '..X..', '..X..', 'XXX..', 'XXX..'];
 const NOTE_COLORS = ['#e87a96', '#6f8fd0', '#e87a96'];
 
 /** 作客時頭上的音符：三顆輪流往上飄、左右晃、淡出；top＝兩隻角色比較高的那隻頭頂（房間格座標） */

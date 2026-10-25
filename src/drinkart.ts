@@ -51,6 +51,91 @@ export function drawShaker(ctx: Ctx, cx: number, cy: number, cell: number, angle
   ctx.restore();
 }
 
+// ---- 克拉棒（照十週年紀念款自己畫：透明球頂裡有藍色皇冠鑽石、銀藍色環、菱格紋握把由藍漸層到粉） ----
+
+// D 球頂玻璃、d 玻璃暗面、s 反光、G/g 鑽石深淺、R/r 銀藍環、N 接頭、B/b M/m P/p 握把藍→紫→粉（深淺交錯做菱格紋）、C 底蓋
+const CARATBONG = [
+  '...DDDDD...',
+  '.DDsDDDdDD.',
+  '.DsDDDDDdD.',
+  'DDDgDgDgDdD',
+  'DdGGgGgGGdD',
+  'DDdGGGGGdDD',
+  '.DDdGGGdDD.',
+  '.DdDDGDDdD.',
+  '..DDDDDDD..',
+  'RRRRRRRRRRR',
+  'rrrrrrrrrrr',
+  '.RRRRRRRRR.',
+  '...NNNNN...',
+  '...BbBbB...',
+  '...bBbBb...',
+  '...BbBbB...',
+  '...bBbBb...',
+  '...MmMmM...',
+  '...mMmMm...',
+  '...MmMmM...',
+  '...PpPpP...',
+  '...pPpPp...',
+  '...PpPpP...',
+  '...pPpPp...',
+  '...CCCCC...',
+];
+const BONG_COLORS: Record<string, string> = {
+  D: '#eef7fd', d: '#c9dff0', s: '#ffffff', G: '#4f86d4', g: '#8db8ee', R: '#b4c4d8', r: '#7d93b2', N: '#c9d5e3',
+  B: '#b7d0ee', b: '#93b5e0', M: '#d3c6ea', m: '#b6a7da', P: '#f6c4d2', p: '#ec9fb6', C: '#9fb0c6',
+};
+/** 按下時球頂發光的顏色（粉、藍是應援色） */
+export type Glow = 'pink' | 'blue';
+const GLOW_DOME: Record<Glow, Record<string, string>> = {
+  pink: { D: '#ffe1ea', d: '#f9b0c6', s: '#ffffff' },
+  blue: { D: '#dcebff', d: '#a6c8f6', s: '#ffffff' },
+};
+export const GLOW_COLOR: Record<Glow, string> = { pink: '#f78fb0', blue: '#6f9ee8' };
+const BONG_W = CARATBONG[0].length + 2;
+const BONG_H = CARATBONG.length + 2;
+const BONG_DOME_Y = 4.5; // 球頂中心在第幾格（發光的圓心）
+
+const bongs = new Map<string, HTMLCanvasElement>();
+
+function bongCanvas(glow?: Glow): HTMLCanvasElement {
+  const key = glow ?? 'off';
+  let cv = bongs.get(key);
+  if (cv) return cv;
+  const on = (x: number, y: number) => CARATBONG[y]?.[x] !== undefined && CARATBONG[y][x] !== '.';
+  cv = grid(BONG_W, BONG_H, (px) => {
+    for (let y = -1; y <= CARATBONG.length; y++)
+      for (let x = -1; x <= CARATBONG[0].length; x++) {
+        if (on(x, y)) {
+          const ch = CARATBONG[y][x];
+          px(x + 1, y + 1, (glow && GLOW_DOME[glow][ch]) || BONG_COLORS[ch]);
+        } else if ([-1, 0, 1].some((dx) => [-1, 0, 1].some((dy) => on(x + dx, y + dy)))) px(x + 1, y + 1, INK);
+      }
+  });
+  bongs.set(key, cv);
+  return cv;
+}
+
+/** 以 (cx, cy) 為中心畫克拉棒，cell＝一格幾 px，angle 為弧度；glow 時球頂變色並有一圈光暈 */
+export function drawCaratBong(ctx: Ctx, cx: number, cy: number, cell: number, angle: number, glow?: Glow): void {
+  const cv = bongCanvas(glow);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  if (glow) {
+    const gy = (BONG_DOME_Y + 1 - BONG_H / 2) * cell;
+    const r = cell * 11;
+    const g = ctx.createRadialGradient(0, gy, cell * 3, 0, gy, r);
+    g.addColorStop(0, GLOW_COLOR[glow] + 'aa');
+    g.addColorStop(1, GLOW_COLOR[glow] + '00');
+    ctx.fillStyle = g;
+    ctx.fillRect(-r, gy - r, r * 2, r * 2);
+  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(cv, (-cv.width * cell) / 2, (-cv.height * cell) / 2, cv.width * cell, cv.height * cell);
+  ctx.restore();
+}
+
 /** 搖晃線：杯子旁邊兩組斜線 */
 export function drawShakeLines(ctx: Ctx, x: number, y: number, cell: number, side: -1 | 1): void {
   ctx.fillStyle = INK;

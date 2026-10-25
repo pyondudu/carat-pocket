@@ -206,3 +206,13 @@ canvas.room {
 /* 重新開始：會刪存檔，用紅色提醒 */
 button.secondary.danger { color: #c0392b; border-color: #c0392b; }
 button.primary.danger { background: #c0392b; border-color: #8e2a20; color: #fff; }
+
+/* 應援 */
+.rhythm-stage { display: flex; flex-direction: column; gap: 8px; }
+canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; display: block; }
+.rhythm-panel { display: flex; flex-direction: column; gap: 8px; }
+.rhythm-panel .hint { text-align: center; white-space: pre-line; color: var(--muted); margin: 0; font-size: 0.85rem; }
+.pads { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pad { font-size: 1.8rem; font-weight: 700; padding: 30px 0; touch-action: none; border-radius: 20px; }
+.pad.pink { background: #f9b6cb; }
+.pad.blue { background: #a9c6f0; }

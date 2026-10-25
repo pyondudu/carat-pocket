@@ -4,6 +4,7 @@ import { go, register } from './router';
 import { homeScene } from './scenes/home';
 import { introScene } from './scenes/intro';
 import { selectScene } from './scenes/select';
+import { rhythmScene } from './scenes/rhythm';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
@@ -18,6 +19,7 @@ register('home', homeScene);
 register('sheet', sheetScene);
 register('shake', shakeScene);
 register('shop', shopScene);
+register('rhythm', rhythmScene);
 
 /** 補算離開期間的時間，離開夠久就顯示「你不在的時候…」 */
 function welcomeBack(): void {
@@ -33,6 +35,8 @@ function welcomeBack(): void {
 loadSprites().then(() => {
   // #sheet：角色總表，檢查表情與比例用
   if (location.hash === '#sheet') return go('sheet');
+  // #rhythm：應援預覽（還沒選本命也能看）
+  if (location.hash === '#rhythm') return go('rhythm');
   welcomeBack();
   go(state.mainId ? 'home' : 'intro');
 });

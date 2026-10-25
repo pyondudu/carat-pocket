@@ -167,7 +167,7 @@ export function shakeScene(): Scene {
             'header',
             { className: 'bar' },
             h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go('home') }),
-            h('h1', { textContent: '搖飲料' }),
+            h('h1', { textContent: '手搖飲' }),
             coins,
             h('button', { className: 'secondary', textContent: '📖 圖鑑', onclick: showCodex }),
           ),

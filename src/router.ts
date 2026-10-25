@@ -5,7 +5,7 @@ export interface Scene {
   unmount?(): void;
 }
 
-export type SceneName = 'intro' | 'select' | 'home' | 'sheet' | 'shake' | 'shop';
+export type SceneName = 'intro' | 'select' | 'home' | 'sheet' | 'shake' | 'shop' | 'rhythm';
 
 const scenes = new Map<SceneName, () => Scene>();
 let current: Scene | null = null;

@@ -21,7 +21,7 @@ export function shopScene(): Scene {
 
       const pay = (price: number): boolean => {
         if (state.coins < price) {
-          toast(`金幣不夠，還差 ${price - state.coins}，去搖飲料賺吧`);
+          toast(`金幣不夠，還差 ${price - state.coins}，去玩手搖飲賺吧`);
           return false;
         }
         state.coins -= price;

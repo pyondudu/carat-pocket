@@ -53,4 +53,4 @@ npm run build    # 型別檢查 + 打包到 dist/
 - [ ] 5. 用 OpenAI 生成像素角色與素材，取代佔位圖（13 隻角色表情已完成，O.C.L 以外改為底圖＋程式五官，會呼吸、眨眼、互動時跳；食物、房間等素材待做）
 - [x] 6. PWA：可加到主畫面（像素克拉鑽石圖示，`tools/icon.py` 產生）、快取後沒網路也能玩、網站更新時顯示「有新版本，點這裡更新」（2026-10-24）
 - [x] 7. 部署到免費 HTTPS 網址分享給朋友：GitHub Pages https://pyondudu.github.io/carat-pocket/（2026-10-24）
-- [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.06 手錶開發板（帶電池版，已下單，等到貨），改寫成 C++，燒錄檔放共用資料夾在 Windows 用網頁工具燒
+- [ ] 8. 實體電子雞：Waveshare ESP32-S3-Touch-AMOLED-2.06 手錶開發板（帶電池版，已下單，等到貨），用 ESP-IDF＋LVGL 9 改寫成 C++（官方文件 https://docs.waveshare.net/ESP32-S3-Touch-AMOLED-2.06/ ），燒錄檔放共用資料夾在 Windows 用網頁工具燒

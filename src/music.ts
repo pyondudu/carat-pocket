@@ -1,16 +1,14 @@
 // 編曲：把 songs.ts 的一個小節排成聲音（鼓、低音、銅管、主旋律），時間都排在 AudioContext 上
 
-import { brass, clap, crash, hat, hold, kick, midi, openHat, snare, tone } from './audio';
+import { brass, clap, crash, hat, kick, lead, midi, openHat, snare, stab, tone } from './audio';
 import type { Bar, Chord, DrumStyle } from './data/songs';
-
-const LEAD_SHIFT = -12; // 樂譜寫高一個八度比較好讀，實際降一個八度，方波才不會太刺耳
 
 /** 鼓的節奏型（16 格，x＝打）：kick 大鼓、clap 拍手、hat 腳踏鈸、open 開放鈸 */
 const DRUMS: Record<DrumStyle, { kick: string; clap: string; hat: string; open: string; bass: string }> = {
   intro: { kick: 'x.......x.......', clap: '............x...', hat: '', open: '', bass: 'R.......R.......' },
   verse: { kick: 'x.....x.x.......', clap: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', open: '', bass: 'R.rR..r.R.rR..r.' },
   build: { kick: 'x...x...x...x...', clap: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', open: '', bass: 'R.R.R.R.R.R.R.R.' },
-  chorus: { kick: 'x...x...x...x...', clap: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', open: '..x...x...x...x.', bass: 'R.rR..r.R.rR..r.' },
+  chorus: { kick: 'x...x...x...x...', clap: '....x.......x...', hat: 'x.x.x.x.x.x.x.x.', open: '..x...x...x...x.', bass: 'R.r.R.r.R.r.R.r.' },
   chant: { kick: 'x...x...x...x...', clap: '....x.......x...', hat: '', open: '..x...x...x...x.', bass: 'R...R...R...R...' },
   end: { kick: 'x..x..x.........', clap: '', hat: '', open: '', bass: 'R..R..R.........' },
 };
@@ -43,6 +41,7 @@ export function playBar(bar: Bar, at: number, step: number): void {
     if (on(d.kick, s)) kick(t(s), 0.8);
     // 預備段後半拍手變八分音符，越來越緊
     if (on(d.clap, s) || (style === 'build' && bar.inSection >= 2 && s % 2 === 0)) clap(t(s), style === 'build' && bar.inSection >= 2 ? 0.2 + s * 0.01 : 0.35);
+    if (style === 'chorus' && on(d.clap, s)) snare(t(s), 0.22); // 副歌拍手再疊小鼓，比較有力
     if (on(d.hat, s)) hat(t(s), s % 4 === 2 ? 0.07 : 0.04);
     if (on(d.open, s)) openHat(t(s));
     // 低音：R＝根音、r＝高八度
@@ -58,7 +57,11 @@ export function playBar(bar: Bar, at: number, step: number): void {
     if (ch === 'x') brass(t(s), voicing(chordAt(s)).map(midi));
     if (ch === 'X') brass(t(s), voicing(chordAt(s)).map(midi), step * 12, 0.04);
   });
-  for (const n of bar.lead) hold(t(n.step), midi(n.midi + LEAD_SHIFT), n.len * step, 'square', 0.045);
+  // 和弦連打：一組四下，第一下重一點
+  [...bar.pulse].forEach((ch, s) => ch === 'x' && stab(t(s), voicing(chordAt(s)).map((n) => midi(n + 12)), s % 4 === 0 ? 0.022 : 0.014));
+  for (const n of bar.lead) lead(t(n.step), midi(n.midi), n.len * step);
+  // 過門：段落最後一小節的最後一拍，小鼓十六分音符漸強（有連打或結尾的段落不加）
+  if (bar.last && !bar.rolls.length && style !== 'end') for (let s = 12; s < 16; s++) snare(t(s), 0.12 + (s - 12) * 0.06);
   // 連打：小鼓滾奏越來越大聲，提示要一直按
   for (const [s, len] of bar.rolls) for (let k = 0; k < len; k++) snare(t(s + k), 0.1 + (k / len) * 0.22);
 }

@@ -3,6 +3,8 @@
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
+let pulse25: PeriodicWave | null = null;
+let echo: GainNode | null = null; // 主旋律的回音（送到延遲線）
 
 /** 取得（必要時建立）AudioContext；手機規定要在使用者按下按鈕時才能開始出聲 */
 export function audio(): AudioContext {
@@ -14,6 +16,21 @@ export function audio(): AudioContext {
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    // 25% 方波：紅白機主旋律那種比較亮、比較尖的聲音
+    const n = 32;
+    const real = new Float32Array(n);
+    const imag = new Float32Array(n);
+    for (let k = 1; k < n; k++) real[k] = (2 * Math.sin(Math.PI * k * 0.25)) / (Math.PI * k);
+    pulse25 = ac.createPeriodicWave(real, imag);
+    // 回音：延遲約一個附點八分音符，回授 0.28
+    echo = ac.createGain();
+    echo.gain.value = 0.3;
+    const delay = ac.createDelay(1);
+    delay.delayTime.value = 0.37;
+    const fb = ac.createGain();
+    fb.gain.value = 0.28;
+    echo.connect(delay).connect(fb).connect(delay);
+    delay.connect(master);
   }
   if (ac.state === 'suspended') void ac.resume();
   return ac;
@@ -90,19 +107,36 @@ export function crash(t: number, peak = 0.18): void {
   noiseHit(t, 'highpass', 4500, peak, 1.2);
 }
 
-/** 持續的音：起音快、維持到 dur 的八成再收掉（主旋律用） */
-export function hold(t: number, freq: number, dur: number, type: OscillatorType = 'square', peak = 0.05): void {
+/** 主旋律：25% 方波、起音快、長音（0.3 秒以上）加一點抖音，同時送一份到回音 */
+export function lead(t: number, freq: number, dur: number, peak = 0.04): void {
   const o = ac!.createOscillator();
-  o.type = type;
+  o.setPeriodicWave(pulse25!);
   o.frequency.value = freq;
+  if (dur >= 0.3) {
+    const lfo = ac!.createOscillator();
+    lfo.frequency.value = 6;
+    const depth = ac!.createGain();
+    depth.gain.setValueAtTime(0, t);
+    depth.gain.linearRampToValueAtTime(freq * 0.012, t + dur * 0.9);
+    lfo.connect(depth).connect(o.frequency);
+    lfo.start(t);
+    lfo.stop(t + dur);
+  }
   const g = ac!.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peak, t + 0.008);
-  g.gain.setValueAtTime(peak, t + dur * 0.8);
-  g.gain.linearRampToValueAtTime(0.0001, t + dur * 0.95);
-  o.connect(g).connect(master!);
+  g.gain.linearRampToValueAtTime(peak, t + 0.006);
+  g.gain.setValueAtTime(peak, t + dur * 0.75);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur * 0.92);
+  g.connect(master!);
+  g.connect(echo!);
+  o.connect(g);
   o.start(t);
   o.stop(t + dur);
+}
+
+/** 和弦連打：很短的方波和弦（學鋼琴右手的十六分音符和弦） */
+export function stab(t: number, freqs: number[], peak = 0.018): void {
+  for (const f of freqs) tone(t, f, 0.07, 'square', peak);
 }
 
 /** 銅管齊奏：鋸齒波和弦經過低通，短促有力 */

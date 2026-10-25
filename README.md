@@ -39,9 +39,9 @@ npm run build    # 型別檢查 + 打包到 dist/
 | `src/data/drinks.ts` | 5 種基本原料、13 種角色專屬原料、19 款飲料配方 |
 | `src/drinkart.ts` | 程式畫的雪克杯、飲料杯與克拉棒 |
 | `src/scenes/rhythm.ts` | 應援節奏小遊戲（太鼓式，粉／藍兩顆按鈕＋紫色連打；背景是房間開演唱會），目前是預覽版 |
-| `src/audio.ts` | Web Audio 合成的 8-bit 音色與按鍵音（應援用，不用音樂檔） |
+| `src/audio.ts` | Web Audio 合成的電子音色（supersaw、pluck、pad、riser、電子鼓）與按鍵音（應援用，不用音樂檔） |
 | `src/data/songs.ts` | 應援曲子：樂譜（和弦、旋律、銅管、鼓型）與三種難度的譜面，展開成音符的純函式 |
-| `src/music.ts` | 編曲：把樂譜的一個小節排成鼓、低音、銅管、主旋律 |
+| `src/music.ts` | 編曲（EDM）：把樂譜的一個小節排成鼓、低音、和弦、主旋律 |
 | `src/scenes/shop.ts` | 商店：紫菜飯糰、本命特殊食物、解鎖夥伴（可邀請作客＋拿專屬原料） |
 | `src/data/shop.ts` | 食物與邀請作客的價格 |
 

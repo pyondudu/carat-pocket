@@ -1,6 +1,7 @@
 // 應援的曲子：純資料＋把資料展開成音符的函式（不碰畫面、不碰聲音），之後手錶版照這份轉成 C 陣列
 // 曲子是原創的；使用者 2026-10-25 指定參考 SEVENTEEN〈Very Nice〉的「感覺」，並給了鋼琴譜（參考資料/，不進 git）。
-// 只取風格：♩=122、降 A 大調、同音連打的喊聲式旋律、十六分音符的和弦連打、跳八度的低音；不抄原曲的音高和節奏
+// 只取風格：降 A 大調、同音連打的喊聲式旋律；不抄原曲的音高和節奏。
+// 編曲 2026-10-25 從銅管（使用者覺得老氣）改成 EDM：128 BPM、supersaw、主歌 pluck、副歌 sidechain 和弦、預備段 Build-up
 
 export type Level = 'easy' | 'normal' | 'hard';
 export const LEVELS: Level[] = ['easy', 'normal', 'hard'];
@@ -17,10 +18,8 @@ export interface Section {
   chords: string;
   /** 旋律：小節用 | 分隔，「A5:2」＝A5 長 2 個 16 分音符，「-:4」＝休息；小節數比 bars 少時從頭重複 */
   lead?: string;
-  /** 銅管短音的位置（每小節 16 格，x＝吹），小節用 | 分隔，不夠就重複 */
-  brass: string;
-  /** 和弦連打（學鋼琴右手的十六分音符和弦，每小節 16 格，x＝打），小節用 | 分隔，不夠就重複 */
-  pulse?: string;
+  /** 撥弦和弦的位置（每小節 16 格，x＝短音、X＝拉長的厚和弦），小節用 | 分隔，不夠就重複 */
+  pluck: string;
   drums: DrumStyle;
   /** 移調（半音） */
   transpose?: number;
@@ -37,20 +36,20 @@ export interface Song {
   sections: Section[];
 }
 
-// 一局約 31 秒（使用者 2026-10-25 選約 30 秒；原本 71 秒太長）：前奏 2 → 主歌 4 → 預備段 2 → 副歌 7 → 結尾 1，共 16 小節
+// 一局約 30 秒（使用者 2026-10-25 選約 30 秒；原本 71 秒太長）：前奏 2 → 主歌 4 → 預備段 2 → 副歌 7 → 結尾 1，共 16 小節
 // 副歌主題是「噠噠・噠・噠 噠—」的同音動機，每次跟著和弦往上移（使用者覺得第一版不夠吸引人，2026-10-25 重寫）
 export const SONGS: Song[] = [
   {
     id: 'party',
     title: '克拉派對', // 暫定曲名，使用者可以改
-    bpm: 122,
+    bpm: 128,
     sections: [
       {
-        // 前奏：先露一下副歌主題，銅管打拍
+        // 前奏：先露一下副歌主題，pluck 在反拍
         bars: 2,
         chords: 'Ab Eb',
         lead: 'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:4 -:4|-:16',
-        brass: 'x.........x.x...|x...x...x...x.x.',
+        pluck: '..x...x...x...x.|..x...x...x.x.x.',
         drums: 'intro',
         chart: {
           easy: 'p.......p.......|p...b...p...b...',
@@ -59,12 +58,11 @@ export const SONGS: Song[] = [
         },
       },
       {
-        // 主歌：低一點、像在念的同音節奏，鋼琴式和弦連打在第 2、4 拍
+        // 主歌：低一點、像在念的同音節奏，pluck 和弦用 3-3-2 切分
         bars: 4,
         chords: 'Ab Fm Db Eb',
         lead: 'Eb5:1 Eb5:1 Eb5:1 -:1 C5:2 Eb5:2 F5:1 Eb5:1 C5:2 Ab4:4|C5:1 C5:1 C5:1 -:1 Ab4:2 C5:2 Db5:1 C5:1 Ab4:2 F4:4|F5:1 F5:1 F5:1 -:1 Db5:2 F5:2 Ab5:2 F5:2 Eb5:2 Db5:2|Eb5:2 -:2 Eb5:2 G5:2 Bb5:4 -:4',
-        brass: '..............x.',
-        pulse: '....xxxx....xxxx',
+        pluck: 'x..x..x...x..x..',
         drums: 'verse',
         chart: {
           easy: 'p.......b.......',
@@ -73,12 +71,11 @@ export const SONGS: Song[] = [
         },
       },
       {
-        // 預備段：一路爬上去，第二小節後半連打
+        // 預備段（Build-up）：一路爬上去、riser 往上掃，第二小節後半連打，其他樂器抽掉
         bars: 2,
         chords: 'Fm Eb',
         lead: 'C5:2 Eb5:2 F5:2 Ab5:2 C6:2 Eb6:2 F6:4|G6:4 -:12',
-        brass: 'x.......x.......|x...............',
-        pulse: 'x.x.x.x.x.x.x.x.|................',
+        pluck: 'x.x.x.x.x.x.x.x.|x.x.............',
         drums: 'build',
         rolls: [[1, 4, 8]],
         chart: {
@@ -88,14 +85,13 @@ export const SONGS: Song[] = [
         },
       },
       {
-        // 副歌：同音動機 Db → Eb → Cm → Fm，再來一次後收在 Db/Eb
+        // 副歌（Drop）：同音動機 Db → Eb → Cm → Fm，再來一次後收在 Db/Eb；supersaw 和弦跟著大鼓吸
         bars: 7,
         chords: 'Db Eb Cm Fm Db Eb Db/Eb',
         lead:
           'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:2 Bb5:1 Ab5:1 -:2 Eb5:2|G5:1 G5:1 -:1 G5:1 -:1 G5:1 Ab5:2 Bb5:4 -:2 Eb6:2|Eb6:1 Eb6:1 -:1 Eb6:1 -:1 Eb6:1 F6:2 Eb6:2 C6:2 Bb5:2 C6:2|Ab5:3 G5:1 Ab5:2 C6:2 -:2 Bb5:2 Ab5:2 G5:2|' +
           'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:2 Bb5:1 Ab5:1 -:2 Eb5:2|G5:1 G5:1 -:1 G5:1 -:1 G5:1 Ab5:2 Bb5:4 -:2 Eb6:2|Eb6:1 Eb6:1 -:1 Eb6:1 -:1 F6:1 Eb6:2 Db6:2 C6:2 Bb5:2 Eb6:2',
-        brass: 'x.........x.....',
-        pulse: '....xxxx....xxxx',
+        pluck: '',
         drums: 'chorus',
         chart: {
           easy: 'p...b...p...b...',
@@ -108,7 +104,7 @@ export const SONGS: Song[] = [
         bars: 1,
         chords: 'Ab',
         lead: 'Ab5:8 -:8',
-        brass: 'X...............',
+        pluck: 'X...............',
         drums: 'end',
         chart: { easy: 'p...............', normal: 'p...............', hard: 'p...............' },
       },
@@ -159,8 +155,7 @@ export interface Bar {
   chords: [Chord, Chord]; // 前半、後半小節
   lead: LeadNote[];
   last: boolean; // 段落的最後一小節（加鼓的過門）
-  brass: string;
-  pulse: string;
+  pluck: string;
   rolls: [number, number][]; // 這小節裡的連打 [第幾格, 長幾格]
 }
 
@@ -189,8 +184,7 @@ export function songBars(song: Song): Bar[] {
         chords: [parseChord(a, tp), parseChord(b, tp)],
         lead,
         last: i === sec.bars - 1,
-        brass: cycle(sec.brass, i),
-        pulse: sec.pulse ? cycle(sec.pulse, i) : '',
+        pluck: cycle(sec.pluck, i),
         rolls: (sec.rolls ?? []).filter(([bar]) => bar === i).map(([, s, n]) => [s, n]),
       });
     }

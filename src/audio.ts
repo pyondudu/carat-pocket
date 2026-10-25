@@ -1,9 +1,9 @@
-// 應援用的 8-bit 合成器（Web Audio），不用音樂檔；所有聲音都排在 AudioContext 的時間上，跟音符共用同一個時鐘
+// 應援用的電子音樂合成器（Web Audio），不用音樂檔；所有聲音都排在 AudioContext 的時間上，跟音符共用同一個時鐘
+// 2026-10-25 從銅管＋方波（使用者覺得老氣）改成 EDM：supersaw、pluck、sidechain 和弦、riser
 
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
-let pulse25: PeriodicWave | null = null;
 let echo: GainNode | null = null; // 主旋律的回音（送到延遲線）
 
 /** 取得（必要時建立）AudioContext；手機規定要在使用者按下按鈕時才能開始出聲 */
@@ -12,16 +12,16 @@ export function audio(): AudioContext {
     ac = new AudioContext();
     master = ac.createGain();
     master.gain.value = 0.7;
-    master.connect(ac.destination);
+    // 總輸出接壓縮器：大鼓、低音、和弦疊起來不會破音，整體也比較緊
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -12;
+    comp.ratio.value = 6;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.15;
+    master.connect(comp).connect(ac.destination);
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    // 25% 方波：紅白機主旋律那種比較亮、比較尖的聲音
-    const n = 32;
-    const real = new Float32Array(n);
-    const imag = new Float32Array(n);
-    for (let k = 1; k < n; k++) real[k] = (2 * Math.sin(Math.PI * k * 0.25)) / (Math.PI * k);
-    pulse25 = ac.createPeriodicWave(real, imag);
     // 回音：延遲約一個附點八分音符，回授 0.28
     echo = ac.createGain();
     echo.gain.value = 0.3;
@@ -61,14 +61,15 @@ function noiseHit(t: number, type: BiquadFilterType, freq: number, peak: number,
   src.stop(t + decay);
 }
 
-/** 大鼓 */
+/** 大鼓：電子鼓，低沉的尾音＋起頭一點點「喀」 */
 export function kick(t: number, peak = 0.9): void {
   const o = ac!.createOscillator();
-  o.frequency.setValueAtTime(150, t);
-  o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-  o.connect(env(t, peak, 0.16));
+  o.frequency.setValueAtTime(190, t);
+  o.frequency.exponentialRampToValueAtTime(48, t + 0.11);
+  o.connect(env(t, peak, 0.34));
   o.start(t);
-  o.stop(t + 0.17);
+  o.stop(t + 0.35);
+  noiseHit(t, 'highpass', 3000, peak * 0.25, 0.012);
 }
 
 /** 小鼓 */
@@ -107,58 +108,90 @@ export function crash(t: number, peak = 0.18): void {
   noiseHit(t, 'highpass', 4500, peak, 1.2);
 }
 
-/** 主旋律：25% 方波、起音快、長音（0.3 秒以上）加一點抖音，同時送一份到回音 */
-export function lead(t: number, freq: number, dur: number, peak = 0.04): void {
-  const o = ac!.createOscillator();
-  o.setPeriodicWave(pulse25!);
-  o.frequency.value = freq;
-  if (dur >= 0.3) {
-    const lfo = ac!.createOscillator();
-    lfo.frequency.value = 6;
-    const depth = ac!.createGain();
-    depth.gain.setValueAtTime(0, t);
-    depth.gain.linearRampToValueAtTime(freq * 0.012, t + dur * 0.9);
-    lfo.connect(depth).connect(o.frequency);
-    lfo.start(t);
-    lfo.stop(t + dur);
-  }
-  const g = ac!.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peak, t + 0.006);
-  g.gain.setValueAtTime(peak, t + dur * 0.75);
-  g.gain.linearRampToValueAtTime(0.0001, t + dur * 0.92);
-  g.connect(master!);
-  g.connect(echo!);
-  o.connect(g);
-  o.start(t);
-  o.stop(t + dur);
-}
-
-/** 和弦連打：很短的方波和弦（學鋼琴右手的十六分音符和弦） */
-export function stab(t: number, freqs: number[], peak = 0.018): void {
-  for (const f of freqs) tone(t, f, 0.07, 'square', peak);
-}
-
-/** 銅管齊奏：鋸齒波和弦經過低通，短促有力 */
-export function brass(t: number, freqs: number[], dur = 0.14, peak = 0.035): void {
-  const f = ac!.createBiquadFilter();
-  f.type = 'lowpass';
-  f.frequency.setValueAtTime(3200, t);
-  f.frequency.exponentialRampToValueAtTime(900, t + dur);
-  const g = ac!.createGain();
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peak, t + 0.01);
-  g.gain.setValueAtTime(peak, t + dur * 0.6);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  f.connect(g).connect(master!);
-  for (const fr of freqs) {
+/** 幾個微微走音的鋸齒波疊在一起（supersaw），送進 dest */
+function saws(t: number, freq: number, end: number, cents: number[], dest: AudioNode): void {
+  for (const c of cents) {
     const o = ac!.createOscillator();
     o.type = 'sawtooth';
-    o.frequency.value = fr;
-    o.connect(f);
+    o.frequency.value = freq;
+    o.detune.value = c;
+    o.connect(dest);
     o.start(t);
-    o.stop(t + dur + 0.01);
+    o.stop(end);
   }
+}
+
+function lowpass(t: number, from: number, to = from, dur = 0): BiquadFilterNode {
+  const f = ac!.createBiquadFilter();
+  f.type = 'lowpass';
+  f.frequency.setValueAtTime(from, t);
+  if (to !== from) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+  return f;
+}
+
+/** 主旋律：supersaw，bright＝副歌（濾波開比較亮、比較大聲），同時送一份到回音 */
+export function lead(t: number, freq: number, dur: number, bright = true): void {
+  const peak = bright ? 0.03 : 0.022;
+  const g = ac!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.008);
+  g.gain.setValueAtTime(peak, t + dur * 0.7);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur * 0.9);
+  g.connect(master!);
+  g.connect(echo!);
+  const f = lowpass(t, bright ? 5200 : 2600);
+  f.connect(g);
+  saws(t, freq, t + dur, [-14, 0, 14], f);
+  saws(t, freq * 2, t + dur, [7], f); // 高八度一點點，聲音比較亮
+}
+
+/** 撥弦（pluck）和弦：鋸齒波，濾波很快從亮變悶 */
+export function pluck(t: number, freqs: number[], peak = 0.022): void {
+  const g = env(t, peak, 0.28);
+  const f = lowpass(t, 5000, 380, 0.2);
+  f.connect(g);
+  for (const fr of freqs) saws(t, fr, t + 0.3, [-8, 8], f);
+}
+
+/** 厚和弦（pad）：supersaw；pump＝一拍的秒數時每拍跟著大鼓「吸一下」（sidechain）；cutoff 從 from 掃到 to */
+export function pad(t: number, freqs: number[], dur: number, opts: { pump?: number; from?: number; to?: number; peak?: number } = {}): void {
+  const peak = opts.peak ?? 0.016;
+  const g = ac!.createGain();
+  if (opts.pump) {
+    for (let k = 0; k * opts.pump < dur - 0.01; k++) {
+      const b = t + k * opts.pump;
+      g.gain.setValueAtTime(peak * 0.08, b);
+      g.gain.linearRampToValueAtTime(peak, b + opts.pump * 0.5);
+    }
+  } else {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.05);
+  }
+  g.gain.setValueAtTime(peak, t + dur - 0.03);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  g.connect(master!);
+  const f = lowpass(t, opts.from ?? 3500, opts.to ?? opts.from ?? 3500, dur);
+  f.connect(g);
+  for (const fr of freqs) saws(t, fr, t + dur, [-12, 0, 12], f);
+}
+
+/** riser：噪音往上掃、越來越大聲（Build-up 用） */
+export function riser(t: number, dur: number, peak = 0.16): void {
+  const src = ac!.createBufferSource();
+  src.buffer = noise;
+  src.loop = true;
+  const f = ac!.createBiquadFilter();
+  f.type = 'bandpass';
+  f.Q.value = 3;
+  f.frequency.setValueAtTime(300, t);
+  f.frequency.exponentialRampToValueAtTime(7000, t + dur);
+  const g = ac!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + dur);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.02);
+  src.connect(f).connect(g).connect(master!);
+  src.start(t);
+  src.stop(t + dur + 0.03);
 }
 
 /** 按鍵音：粉＝咚（低）、藍＝咔（高） */

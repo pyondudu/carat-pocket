@@ -216,3 +216,7 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .pad { font-size: 1.8rem; font-weight: 700; padding: 30px 0; touch-action: none; border-radius: 20px; }
 .pad.pink { background: #f9b6cb; }
 .pad.blue { background: #a9c6f0; }
+.rhythm-panel .shake-info { justify-content: center; color: var(--muted); font-size: 1.1rem; }
+.result-title { text-align: center; margin: 0; }
+.rhythm-result { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+.stat-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #d9cfd6; padding: 4px 2px; }

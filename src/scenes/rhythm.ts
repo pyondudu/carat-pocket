@@ -1,5 +1,5 @@
 // 應援（預覽版）：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
-// 目前是預覽版（2026-10-25 推上去給使用者手機試）：固定循環的節奏、不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
+// 目前是預覽版（2026-10-25 推上去給使用者手機試）：固定節奏、一局 32 秒、不扣體力、不給金幣；正式版計畫見 ~/.claude/plans/sparkling-finding-giraffe.md
 
 import { CHARACTERS } from '../data/characters';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
@@ -16,6 +16,7 @@ const STEP = 60 / BPM / 4; // 16 分音符（秒）
 const BAR = STEP * 16;
 const TRAVEL = 1.6; // 音符從右邊出現到判定圈的秒數
 const LEAD_IN = 2; // 按開始後幾秒第一拍
+const SONG_BARS = 16; // 一局幾小節（120 BPM 一小節 2 秒，共 32 秒）
 const LANE_H = 15; // 軌道高度（房間格數）
 const JUDGE_X = 9; // 判定圈中心（房間格數）
 const WINDOWS = [
@@ -33,7 +34,8 @@ interface Note {
   missed?: boolean;
 }
 
-/** 預覽用的 4 小節循環：粉在大鼓、藍在小鼓，第 4 小節後半是連打；steps＝連打的長度（16 分音符數） */
+/** 預覽用的 4 小節循環：粉在大鼓、藍在小鼓，第 4 小節後半是連打；steps＝連打的長度（16 分音符數）
+ *  連打結束後至少空一拍才接下一個音符，不然來不及從狂按切回看顏色（使用者 2026-10-25 回報） */
 function barNotes(bar: number): { step: number; color: Note['color']; steps?: number }[] {
   const n: { step: number; color: Note['color']; steps?: number }[] = [
     { step: 0, color: 'pink' },
@@ -41,7 +43,7 @@ function barNotes(bar: number): { step: number; color: Note['color']; steps?: nu
   ];
   const v = bar % 4;
   if (v === 3) {
-    n.push({ step: 8, color: 'roll', steps: 7 });
+    n.push({ step: 8, color: 'roll', steps: 4 });
     return n;
   }
   n.push({ step: 8, color: 'pink' }, { step: 12, color: 'blue' });
@@ -144,6 +146,8 @@ export function rhythmScene(): Scene {
       const notes: Note[] = [];
       let combo = 0;
       let best = 0;
+      const counts = { 完美: 0, 很好: 0, 還行: 0, 漏掉: 0, 連打: 0 };
+      const info = h('div', { className: 'shake-info' });
       let judge: { label: string; color: string; at: number } | null = null;
       let tapAt: number | undefined;
       let hopAt: number | undefined;
@@ -167,11 +171,11 @@ export function rhythmScene(): Scene {
       // 軌道放在房間和按鈕之間（使用者 2026-10-25 定案）
       stage.append(room, lane);
 
-      // 排程：提前排好下一小節的音樂和音符
+      // 排程：提前排好之後小節的音樂和音符；提前量要比音符流動時間長，音符才會從軌道右邊出現，不會在中間突然冒出來
       const schedule = () => {
         if (!playing) return;
         const ac = audio();
-        while (t0 + scheduledBar * BAR < ac.currentTime + 0.6) {
+        while (scheduledBar < SONG_BARS && t0 + scheduledBar * BAR < ac.currentTime + TRAVEL + 0.5) {
           const bar = scheduledBar++;
           const at = t0 + bar * BAR;
           for (let s = 0; s < 16; s += 2) hat(at + s * STEP, s % 4 === 2 ? 0.09 : 0.05);
@@ -210,6 +214,7 @@ export function rhythmScene(): Scene {
         const roll = notes.find((n) => n.color === 'roll' && st >= n.t - 0.05 && st <= n.t + n.len! + 0.05);
         if (roll) {
           roll.rolls!++;
+          counts.連打++;
           judge = { label: `連打 ${roll.rolls}`, color: '#e3c8ff', at: now };
           return;
         }
@@ -218,6 +223,7 @@ export function rhythmScene(): Scene {
         n.hit = true;
         const dt = Math.abs(n.t - st) * 1000;
         const w = WINDOWS.find((w) => dt <= w.ms)!;
+        counts[w.label as '完美' | '很好' | '還行']++;
         combo++;
         best = Math.max(best, combo);
         judge = { label: w.label, color: w.color, at: now };
@@ -240,10 +246,33 @@ export function rhythmScene(): Scene {
         scheduledBar = 0;
         notes.length = 0;
         combo = best = 0;
+        for (const k of Object.keys(counts) as (keyof typeof counts)[]) counts[k] = 0;
         judge = null;
         schedule();
+        clearInterval(timer);
         timer = window.setInterval(schedule, 100);
-        panel.replaceChildren(h('div', { className: 'pads' }, pad('pink', '粉'), pad('blue', '藍')), h('p', { className: 'hint', textContent: '電腦可以用 F／J 鍵' }));
+        panel.replaceChildren(info, h('div', { className: 'pads' }, pad('pink', '粉'), pad('blue', '藍')), h('p', { className: 'hint', textContent: '電腦可以用 F／J 鍵' }));
+      };
+
+      // 一局結束：結算畫面（預覽版不給金幣）
+      const finish = () => {
+        playing = false;
+        clearInterval(timer);
+        const row = (k: string, v: number) => h('div', { className: 'stat-row' }, h('span', { textContent: k }), h('strong', { textContent: String(v) }));
+        panel.replaceChildren(
+          h('h2', { className: 'result-title', textContent: '應援結束！' }),
+          h(
+            'div',
+            { className: 'rhythm-result' },
+            row('完美', counts.完美),
+            row('很好', counts.很好),
+            row('還行', counts.還行),
+            row('漏掉', counts.漏掉),
+            row('最高連擊', best),
+            row('連打', counts.連打),
+          ),
+          h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '回房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('button', { className: 'primary', textContent: '再玩一次', onclick: start })),
+        );
       };
 
       const char = () => CHARACTERS[charIndex];
@@ -289,32 +318,35 @@ export function rhythmScene(): Scene {
         blit(ring, jx);
         if (!playing) return;
         const st = songTime();
-        // 後面的先畫，前面的音符蓋在上面
+        const pos = (d: number) => jx + (d / TRAVEL) * (W - jx + 8 * ZOOM);
+        // 連打長條先畫在最底下，一般音符蓋在上面，才不會被長條藏住
+        for (const n of notes) {
+          if (n.color !== 'roll') continue;
+          const dt = n.t - st;
+          const end = dt + n.len!;
+          if (dt > TRAVEL || end < -0.3) continue;
+          // 經過判定圈的部分被「吃掉」：頭停在判定圈，尾巴流進來
+          const hx = Math.max(pos(dt), jx);
+          const tx = pos(end);
+          if (tx < jx) continue;
+          const r = 5 * ZOOM;
+          lctx.fillStyle = INK;
+          lctx.fillRect(Math.round(hx), Math.round(cy - r), Math.round(tx - hx), r * 2);
+          lctx.fillStyle = ROLL;
+          lctx.fillRect(Math.round(hx), Math.round(cy - r + ZOOM), Math.round(tx - hx), r * 2 - ZOOM * 2);
+          lctx.fillStyle = '#e3c8ff';
+          lctx.fillRect(Math.round(hx), Math.round(cy - r + ZOOM * 2), Math.round(tx - hx), ZOOM);
+          blit(noteRoll, tx);
+          blit(noteRoll, hx);
+        }
+        // 一般音符：後面的先畫，前面的蓋在上面
         for (let i = notes.length - 1; i >= 0; i--) {
           const n = notes[i];
-          if (n.hit) continue;
+          if (n.hit || n.color === 'roll') continue;
           const dt = n.t - st;
-          const pos = (d: number) => jx + (d / TRAVEL) * (W - jx + 8 * ZOOM);
-          if (n.color === 'roll') {
-            const end = dt + n.len!;
-            if (dt > TRAVEL || end < -0.3) continue;
-            // 經過判定圈的部分被「吃掉」：頭停在判定圈，尾巴流進來
-            const hx = Math.max(pos(dt), jx);
-            const tx = pos(end);
-            if (tx < jx) continue;
-            const r = 5 * ZOOM;
-            lctx.fillStyle = INK;
-            lctx.fillRect(Math.round(hx), Math.round(cy - r), Math.round(tx - hx), r * 2);
-            lctx.fillStyle = ROLL;
-            lctx.fillRect(Math.round(hx), Math.round(cy - r + ZOOM), Math.round(tx - hx), r * 2 - ZOOM * 2);
-            lctx.fillStyle = '#e3c8ff';
-            lctx.fillRect(Math.round(hx), Math.round(cy - r + ZOOM * 2), Math.round(tx - hx), ZOOM);
-            blit(noteRoll, tx);
-            blit(noteRoll, hx);
-            continue;
-          }
           if (!n.missed && dt < -WINDOWS[2].ms / 1000) {
             n.missed = true;
+            counts.漏掉++;
             combo = 0;
             judge = { label: '漏掉', color: '#9a93a8', at: now };
           }
@@ -323,6 +355,11 @@ export function rhythmScene(): Scene {
         }
         // 清掉已經過去很久的音符
         while (notes.length && notes[0].t + (notes[0].len ?? 0) < st - 1) notes.shift();
+        // 剩餘秒數（跟手搖飲一樣顯示在按鈕上方）
+        const left = SONG_BARS * BAR - st;
+        const text = st < 0 ? `準備…${Math.ceil(-st)}` : `⏱ ${Math.max(0, Math.ceil(left))} 秒`;
+        if (info.textContent !== text) info.textContent = text;
+        if (left < -0.8) finish();
       };
 
       const draw = (now: number) => {

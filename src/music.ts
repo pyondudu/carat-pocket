@@ -16,7 +16,8 @@ const DRUMS: Record<DrumStyle, { kick: string; clap: string; hat: string; open: 
 
 /** 和弦的組成音（MIDI），排在 G#3～G#4 附近 */
 function voicing(c: Chord): number[] {
-  const ivs = [0, c.minor ? 3 : 4, 7, ...(c.seventh ? [10] : [])];
+  const ext = { '': [], '7': [10], maj7: [11], '9': [10, 14], add9: [14] }[c.ext];
+  const ivs = [0, c.minor ? 3 : 4, 7, ...ext];
   return ivs.map((iv) => {
     let n = 48 + c.root + iv;
     while (n < 56) n += 12;

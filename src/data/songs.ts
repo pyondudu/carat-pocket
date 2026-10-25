@@ -1,7 +1,6 @@
 // 應援的曲子：純資料＋把資料展開成音符的函式（不碰畫面、不碰聲音），之後手錶版照這份轉成 C 陣列
-// 曲子是原創的；使用者 2026-10-25 指定參考 SEVENTEEN〈Very Nice〉的「感覺」，並給了鋼琴譜（參考資料/，不進 git）。
-// 只取風格：降 A 大調、同音連打的喊聲式旋律；不抄原曲的音高和節奏。
-// 編曲 2026-10-25 從銅管（使用者覺得老氣）改成 EDM：128 BPM、supersaw、主歌 pluck、副歌 sidechain 和弦、預備段 Build-up
+// 曲子是原創的。2026-10-25 經過幾版：銅管＋方波（使用者覺得老氣）→ 編曲改 EDM → 旋律也嫌老氣，使用者說不用再參考〈Very Nice〉樂譜，
+// 改照現在 EDM／K-pop 的寫法：小調、四和弦循環加 7／9 度、旋律只用小調五聲音階、副歌是「人聲切片」風格的短音切分＋八度跳躍
 
 export type Level = 'easy' | 'normal' | 'hard';
 export const LEVELS: Level[] = ['easy', 'normal', 'hard'];
@@ -37,8 +36,8 @@ export interface Song {
   sections: Section[];
 }
 
-// 一局約 30 秒（使用者 2026-10-25 選約 30 秒；原本 71 秒太長）：前奏 2 → 主歌 4 → 預備段 2 → 副歌 7 → 結尾 1，共 16 小節
-// 副歌主題是「噠噠・噠・噠 噠—」的同音動機，每次跟著和弦往上移（使用者覺得第一版不夠吸引人，2026-10-25 重寫）
+// 一局約 30 秒（使用者 2026-10-25 選的）：前奏 2 → 主歌 4 → 預備段 2 → 副歌 7 → 結尾 1，共 16 小節
+// F 小調，和弦循環 Fm9 → Dbmaj7 → Ab(add9) → Eb；難度：簡單 OK，普通只用八分音符位置（使用者覺得原本普通跳太難）
 export const SONGS: Song[] = [
   {
     id: 'party',
@@ -46,65 +45,65 @@ export const SONGS: Song[] = [
     bpm: 128,
     sections: [
       {
-        // 前奏：先露一下副歌主題，pluck 在反拍
+        // 前奏：悶悶的和弦，先露一下副歌的切片主題
         bars: 2,
-        chords: 'Ab Eb',
-        lead: 'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:4 -:4|-:16',
+        chords: 'Fm9 Dbmaj7',
+        lead: 'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|-:16',
         pluck: '..x...x...x...x.|..x...x...x.x.x.',
         drums: 'intro',
         chart: {
           easy: 'p.......p.......|p...b...p...b...',
-          normal: 'p...p...p.b.b...|p...b...p...b...',
-          hard: 'pp.b.bp.p...b.bb|p.b.b.p.p.b.bbbb',
+          normal: 'p...p...p...b...|p...b...p...b...',
+          hard: 'p..b..p.p.bb..b.|p.b.b.p.p.b.bbbb',
         },
       },
       {
-        // 主歌：低一點、像在念的同音節奏，pluck 和弦用 3-3-2 切分
+        // 主歌：低音域、從反拍進來的短句，pluck 和弦 3-3-2 切分
         bars: 4,
-        chords: 'Ab Fm Db Eb',
-        lead: 'Eb5:1 Eb5:1 Eb5:1 -:1 C5:2 Eb5:2 F5:1 Eb5:1 C5:2 Ab4:4|C5:1 C5:1 C5:1 -:1 Ab4:2 C5:2 Db5:1 C5:1 Ab4:2 F4:4|F5:1 F5:1 F5:1 -:1 Db5:2 F5:2 Ab5:2 F5:2 Eb5:2 Db5:2|Eb5:2 -:2 Eb5:2 G5:2 Bb5:4 -:4',
+        chords: 'Fm9 Dbmaj7 Abadd9 Eb',
+        lead: '-:2 C5:2 C5:2 Eb5:2 F5:4 Eb5:2 C5:2|-:2 C5:2 C5:2 Eb5:2 F5:2 Ab5:4 F5:2|-:2 Eb5:2 Eb5:2 F5:2 Ab5:4 F5:2 Eb5:2|C5:6 -:2 Bb4:2 C5:2 Eb5:4',
         pluck: 'x..x..x...x..x..',
         drums: 'verse',
         chart: {
           easy: 'p.......b.......',
-          normal: 'p...b...p.p.b...|p...b...p...b...|p...b...p.p.b...|p...b...p.b.b...',
-          hard: 'ppp.b.b.pbb.p...|ppp.b.b.pbb.p...|ppp.b.b.p.b.p.b.|p...b.p.b.b.bbbb',
+          normal: 'p.b.b...p...b...|p.b.b...p...b...|p.b.b...p...b...|p.......p...b...',
+          hard: 'p.b.b.p.p...b.b.|p.b.b.p.p.b...b.|p.b.b.p.p...b.b.|p.......p.b.b.bb',
         },
       },
       {
-        // 預備段（Build-up）：一路爬上去、riser 往上掃，第二小節後半連打，其他樂器抽掉
+        // 預備段（Build-up）：往上爬、riser 往上掃，第二小節後半連打，其他樂器抽掉
         bars: 2,
-        chords: 'Fm Eb',
-        lead: 'C5:2 Eb5:2 F5:2 Ab5:2 C6:2 Eb6:2 F6:4|G6:4 -:12',
+        chords: 'Dbmaj7 Eb',
+        lead: 'Ab5:2 Bb5:2 C6:2 Ab5:2 Bb5:2 C6:2 Eb6:4|F6:4 -:12',
         pluck: 'x.x.x.x.x.x.x.x.|x.x.............',
         drums: 'build',
         rolls: [[1, 4, 8]],
         chart: {
           easy: 'p...p...p...p...|p...............',
-          normal: 'p...p...p.p.p.p.|p...............',
-          hard: 'p.b.p.b.p.b.pbpb|p...............',
+          normal: 'p.p.b.b.p.p.b...|p...............',
+          hard: 'pbpbp.b.pbpbp.bb|p...............',
         },
       },
       {
-        // 副歌（Drop）：同音動機 Db → Eb → Cm → Fm，再來一次後收在 Db/Eb；supersaw 和弦跟著大鼓吸
+        // 副歌（Drop）：人聲切片風格的短音主題，3-3-2 切分、八度跳躍；supersaw 和弦跟著大鼓吸
         bars: 7,
-        chords: 'Db Eb Cm Fm Db Eb Db/Eb',
+        chords: 'Fm9 Dbmaj7 Abadd9 Eb Fm9 Dbmaj7 Dbmaj7/Eb',
         lead:
-          'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:2 Bb5:1 Ab5:1 -:2 Eb5:2|G5:1 G5:1 -:1 G5:1 -:1 G5:1 Ab5:2 Bb5:4 -:2 Eb6:2|Eb6:1 Eb6:1 -:1 Eb6:1 -:1 Eb6:1 F6:2 Eb6:2 C6:2 Bb5:2 C6:2|Ab5:3 G5:1 Ab5:2 C6:2 -:2 Bb5:2 Ab5:2 G5:2|' +
-          'Ab5:1 Ab5:1 -:1 Ab5:1 -:1 Ab5:1 Bb5:2 C6:2 Bb5:1 Ab5:1 -:2 Eb5:2|G5:1 G5:1 -:1 G5:1 -:1 G5:1 Ab5:2 Bb5:4 -:2 Eb6:2|Eb6:1 Eb6:1 -:1 Eb6:1 -:1 F6:1 Eb6:2 Db6:2 C6:2 Bb5:2 Eb6:2',
+          'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2|F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 F6:1 Ab6:1 -:2 F6:2|Eb6:2 -:1 C6:2 -:1 Bb5:2 -:4 C6:1 Eb6:1 -:2|' +
+          'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2|F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2|F6:1 -:2 Eb6:1 -:2 C6:2 Eb6:2 F6:4 -:2',
         pluck: '',
         drums: 'chorus',
         chart: {
           easy: 'p...b...p...b...',
-          normal: 'p...b.b.p...b...|p...b...p.......|p...b.b.p...b...|p...b...p.b.b...',
-          hard: 'pp.b.bp.p.bb..b.|pp.b.bp.p...p.b.|pp.b.bp.p.bb..b.|p..bp.b.b.b.pbb.',
+          normal: 'p...b...p.b...b.|p...b...p.b...b.|p...b...p.b...b.|p.....b.....b...',
+          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.....bb..',
         },
       },
       {
         // 結尾：最後一聲
         bars: 1,
-        chords: 'Ab',
-        lead: 'Ab5:8 -:8',
+        chords: 'Fm9',
+        lead: 'F6:8 -:8',
         pluck: 'X...............',
         drums: 'end',
         chart: { easy: 'p...............', normal: 'p...............', hard: 'p...............' },
@@ -120,14 +119,15 @@ const NAMES: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 1
 export interface Chord {
   root: number; // 0～11（C＝0）
   minor: boolean;
-  seventh: boolean;
+  /** 延伸音：7＝小七度、maj7＝大七度、9＝小七度＋九度、add9＝只加九度 */
+  ext: '' | '7' | 'maj7' | '9' | 'add9';
 }
 
 function parseChord(s: string, transpose: number): Chord {
-  const m = /^([A-G])([b#]?)(m?)(7?)$/.exec(s);
+  const m = /^([A-G])([b#]?)(m?)(maj7|7|9|add9)?$/.exec(s);
   if (!m) throw new Error(`看不懂的和弦：${s}`);
   const root = (NAMES[m[1]] + (m[2] === 'b' ? -1 : m[2] === '#' ? 1 : 0) + transpose + 24) % 12;
-  return { root, minor: m[3] === 'm', seventh: m[4] === '7' };
+  return { root, minor: m[3] === 'm', ext: (m[4] ?? '') as Chord['ext'] };
 }
 
 /** 音名 → MIDI 音高（C4＝60） */

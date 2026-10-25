@@ -6,9 +6,10 @@
 export type Level = 'easy' | 'normal' | 'hard';
 export const LEVELS: Level[] = ['easy', 'normal', 'hard'];
 export const LEVEL_LABEL: Record<Level, string> = { easy: '簡單', normal: '普通', hard: '困難' };
-export const LEVEL_NOTE: Record<Level, string> = { easy: '音符少，跟著重拍按', normal: '粉藍交替，跟著銅管按', hard: '切分音和快速交錯' };
-/** 音符從軌道右邊流到判定圈的秒數：簡單慢一點比較好看清楚 */
-export const LEVEL_TRAVEL: Record<Level, number> = { easy: 2, normal: 1.6, hard: 1.3 };
+export const LEVEL_NOTE: Record<Level, string> = { easy: '音符少，跟著重拍按', normal: '一拍一個，偶爾連兩下', hard: '跟著旋律，快速交錯' };
+/** 音符從軌道右邊流到判定圈的秒數：簡單慢一點比較好看清楚
+ *  普通只用八分音符的位置、約 60 個音符（2026-10-25 使用者覺得普通比簡單難太多，原本 87 個還有十六分音符） */
+export const LEVEL_TRAVEL: Record<Level, number> = { easy: 2, normal: 1.8, hard: 1.3 };
 
 export type DrumStyle = 'intro' | 'verse' | 'build' | 'chorus' | 'chant' | 'end';
 
@@ -53,7 +54,7 @@ export const SONGS: Song[] = [
         drums: 'intro',
         chart: {
           easy: 'p.......p.......|p...b...p...b...',
-          normal: 'p..b.bp.p...b.b.|p...b...p...b.b.',
+          normal: 'p...p...p.b.b...|p...b...p...b...',
           hard: 'pp.b.bp.p...b.bb|p.b.b.p.p.b.bbbb',
         },
       },
@@ -66,7 +67,7 @@ export const SONGS: Song[] = [
         drums: 'verse',
         chart: {
           easy: 'p.......b.......',
-          normal: 'p...b.p.p...b...|p...b.p.p...b...|p.p.b.b.p.b.p.b.|p...b.p.b...b...',
+          normal: 'p...b...p.p.b...|p...b...p...b...|p...b...p.p.b...|p...b...p.b.b...',
           hard: 'ppp.b.b.pbb.p...|ppp.b.b.pbb.p...|ppp.b.b.p.b.p.b.|p...b.p.b.b.bbbb',
         },
       },
@@ -80,7 +81,7 @@ export const SONGS: Song[] = [
         rolls: [[1, 4, 8]],
         chart: {
           easy: 'p...p...p...p...|p...............',
-          normal: 'p.b.p.b.p.b.p...|p...............',
+          normal: 'p...p...p.p.p.p.|p...............',
           hard: 'p.b.p.b.p.b.pbpb|p...............',
         },
       },
@@ -95,7 +96,7 @@ export const SONGS: Song[] = [
         drums: 'chorus',
         chart: {
           easy: 'p...b...p...b...',
-          normal: 'p..b.b..p.b...b.|p..b.bp.p.....b.|p..b.b..p.b...b.|p..bp.b...b.p.b.',
+          normal: 'p...b.b.p...b...|p...b...p.......|p...b.b.p...b...|p...b...p.b.b...',
           hard: 'pp.b.bp.p.bb..b.|pp.b.bp.p...p.b.|pp.b.bp.p.bb..b.|p..bp.b.b.b.pbb.',
         },
       },

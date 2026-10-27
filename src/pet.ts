@@ -21,8 +21,8 @@ export const STAT_LABELS: Record<keyof PetStats, string> = {
   energy: '體力',
 };
 
-/** 每小時變化量 */
-const DECAY_PER_HOUR: PetStats = { hunger: -8, mood: -6, clean: -4, energy: -5 };
+/** 每小時變化量；體力醒著不會掉，只有玩遊戲、邀請會用掉（使用者 2026-10-27：沒做事就掉說不通；心情同時從 −6 改 −5） */
+const DECAY_PER_HOUR: PetStats = { hunger: -8, mood: -5, clean: -4, energy: 0 };
 const SLEEP_ENERGY_PER_HOUR = 50;
 
 export function newPet(): PetState {

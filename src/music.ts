@@ -111,7 +111,7 @@ export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, o
     if (beat > 0) return;
     crash(at, 0.25);
     kick(at, 1);
-    bassSynth(at, midi(bassNote(chord)), step * 8, 0.14);
+    bassSynth(at, midi(bassNote(chord)), step * 8, 0.45);
     return;
   }
   for (let s = beat * 4; s < beat * 4 + 4; s++) {
@@ -124,8 +124,11 @@ export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, o
       if (s % 4 === 2) openHat(t(s), 0.13);
       else hat(t(s), s % 2 ? 0.05 : 0.08);
     }
-    // 低音：反拍＋後面一個 16 分音符的滾動低音（house 常見）
-    if (on.bass && s % 4 >= 2) bassSynth(t(s), midi(bassNote(chord)), step * (s % 4 === 2 ? 0.9 : 0.7), s % 4 === 2 ? 0.14 : 0.1);
+    // 低音：避開大鼓，16 分音符「低－高八度－低」跳著走，節奏感明顯，開關前後一聽就知道
+    if (on.bass && s % 4 !== 0) {
+      const up = s % 4 === 2 ? 12 : 0;
+      bassSynth(t(s), midi(bassNote(chord) + up), step * 0.85, up ? 0.5 : 0.42);
+    }
   }
   if (on.lead) for (const n of bar.lead) if (Math.floor(n.step / 4) === beat) lead(t(n.step), midi(n.midi), n.len * step, true, 1.8);
 }

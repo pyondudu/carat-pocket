@@ -188,17 +188,36 @@ export function lead(t: number, freq: number, dur: number, bright = true, gain =
   saws(t, freq * 2, t + dur, [7], f); // 高八度一點點，聲音比較亮
 }
 
-/** 合成低音（Disc Jockey 用）：鋸齒波＋高八度方波，濾波從亮很快變悶；手機喇叭放不出純低頻，所以要有泛音才聽得到 */
+let grit: WaveShaperNode | null = null;
+/** 破音：tanh 曲線，讓低音多一些泛音，手機喇叭才聽得到 */
+function gritNode(): WaveShaperNode {
+  if (!grit) {
+    grit = ac!.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < curve.length; i++) {
+      const x = (i / (curve.length - 1)) * 2 - 1;
+      curve[i] = Math.tanh(x * 4) / Math.tanh(4);
+    }
+    grit.curve = curve;
+    const out = ac!.createGain();
+    out.gain.value = 0.5;
+    grit.connect(out).connect(master!);
+  }
+  return grit;
+}
+
+/** 合成低音（Disc Jockey 用）：鋸齒波＋高八度方波過破音，濾波從亮很快變悶（「啵」一聲）；
+ *  使用者 2026-10-27 反映低音聽不出混音感：手機喇叭放不出純低頻，要有泛音和明顯的節奏才聽得出來 */
 export function bassSynth(t: number, freq: number, dur: number, peak = 0.12): void {
   const g = ac!.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(peak, t + 0.005);
-  g.gain.setValueAtTime(peak, t + dur * 0.6);
+  g.gain.linearRampToValueAtTime(peak, t + 0.004);
+  g.gain.setValueAtTime(peak, t + dur * 0.5);
   g.gain.linearRampToValueAtTime(0.0001, t + dur);
-  g.connect(master!);
-  const f = lowpass(t, 2400, 500, dur * 0.8);
-  f.Q.value = 6;
+  const f = lowpass(t, 3200, 420, dur * 0.7);
+  f.Q.value = 9;
   f.connect(g);
+  g.connect(gritNode());
   const o = ac!.createOscillator();
   o.type = 'sawtooth';
   o.frequency.value = freq;
@@ -207,7 +226,7 @@ export function bassSynth(t: number, freq: number, dur: number, peak = 0.12): vo
   o2.type = 'square';
   o2.frequency.value = freq * 2;
   const g2 = ac!.createGain();
-  g2.gain.value = 0.35;
+  g2.gain.value = 0.4;
   o2.connect(g2).connect(f);
   for (const x of [o, o2]) {
     x.start(t);

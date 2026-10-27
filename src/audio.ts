@@ -22,7 +22,7 @@ export function audio(): AudioContext {
     comp.release.value = 0.15;
     master.connect(comp).connect(ac.destination);
     fxBus = ac.createGain();
-    fxBus.gain.value = 0.7;
+    fxBus.gain.value = 0.9;
     fxBus.connect(comp);
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noise.getChannelData(0);
@@ -290,7 +290,14 @@ export function riser(t: number, dur: number, peak = 0.16): void {
 
 /** 刷碟（Disc Jockey）：濾波噪音＋音高來回滑的「wicka-wicka」，dur 秒內來回 strokes 下（長刷） */
 export function scratch(t: number, dur: number, strokes = 6): void {
+  // 使用者 2026-10-27：太小聲、太短 → 濾波調寬（Q 2）、每一下維持到 70% 才收（原本一出來就快速衰減）、音量加大
   const d = dur / strokes;
+  const shape = (g: GainNode, s: number, peak: number) => {
+    g.gain.setValueAtTime(0.0001, s);
+    g.gain.linearRampToValueAtTime(peak, s + 0.012);
+    g.gain.setValueAtTime(peak, s + d * 0.7);
+    g.gain.linearRampToValueAtTime(0.0001, s + d * 0.97);
+  };
   for (let k = 0; k < strokes; k++) {
     const s = t + k * d;
     const fwd = k % 2 === 0; // 往前推音高往上、往回拉音高往下
@@ -298,25 +305,22 @@ export function scratch(t: number, dur: number, strokes = 6): void {
     src.buffer = noise;
     const f = ac!.createBiquadFilter();
     f.type = 'bandpass';
-    f.Q.value = 6;
-    f.frequency.setValueAtTime(fwd ? 500 : 2600, s);
-    f.frequency.exponentialRampToValueAtTime(fwd ? 2600 : 500, s + d * 0.9);
+    f.Q.value = 2;
+    f.frequency.setValueAtTime(fwd ? 600 : 3200, s);
+    f.frequency.exponentialRampToValueAtTime(fwd ? 3200 : 600, s + d * 0.9);
     const g = ac!.createGain();
-    g.gain.setValueAtTime(0.0001, s);
-    g.gain.linearRampToValueAtTime(0.9, s + d * 0.15);
-    g.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
+    shape(g, s, 1.1);
     src.connect(f).connect(g).connect(fxBus!);
     src.start(s);
     src.stop(s + d);
     const o = ac!.createOscillator();
     o.type = 'sawtooth';
-    o.frequency.setValueAtTime(fwd ? 160 : 520, s);
-    o.frequency.exponentialRampToValueAtTime(fwd ? 520 : 160, s + d * 0.9);
+    o.frequency.setValueAtTime(fwd ? 180 : 600, s);
+    o.frequency.exponentialRampToValueAtTime(fwd ? 600 : 180, s + d * 0.9);
+    const lp = lowpass(s, 2500);
     const og = ac!.createGain();
-    og.gain.setValueAtTime(0.0001, s);
-    og.gain.linearRampToValueAtTime(0.12, s + d * 0.15);
-    og.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
-    o.connect(og).connect(fxBus!);
+    shape(og, s, 0.22);
+    o.connect(lp).connect(og).connect(fxBus!);
     o.start(s);
     o.stop(s + d);
   }

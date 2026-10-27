@@ -29,9 +29,9 @@ export const ORDERS: Order[] = [
   { from: 14, mix: 'dbl' },
 ];
 
-/** 刷碟點單：第幾格（16 分音符，從第一拍算）開始長刷，長 SCRATCH_STEPS 格；都放在換點單前的最後兩拍 */
+/** 刷碟點單：第幾格（16 分音符，從第一拍算）開始長刷，長 SCRATCH_STEPS 格（一小節，使用者 2026-10-27 嫌半小節太短）；都從小節後半開始 */
 export const SCRATCHES = [7 * 16 + 8, 11 * 16 + 8, 15 * 16 + 8];
-export const SCRATCH_STEPS = 8;
+export const SCRATCH_STEPS = 16;
 
 export const MIX_LABEL: Record<keyof DjLayers, string> = { drums: '鼓', bass: '低音', lead: '旋律' };
 

@@ -412,10 +412,10 @@ export function djScene(): Scene {
         const w = WINDOWS.find((x) => dt <= x.ms)!;
         tally.scratch[w.label as Judge]++;
         judge = { label: `刷碟 ${w.label}`, color: w.color, at: performance.now() };
-        // 刷碟聲從按下的這一刻開始，長刷兩拍；其他聲音壓小
+        // 刷碟聲從按下的這一刻開始，長刷一小節（每八分音符來回一下）；其他聲音壓到一半
         const now = audio().currentTime;
-        scratchSound(now, SCRATCH_STEPS * STEP);
-        duck(now, SCRATCH_STEPS * STEP);
+        scratchSound(now, SCRATCH_STEPS * STEP, SCRATCH_STEPS / 2);
+        duck(now, SCRATCH_STEPS * STEP, 0.5);
         scratchAt = performance.now();
         refreshKeys();
       };

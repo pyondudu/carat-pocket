@@ -305,6 +305,8 @@ const COUNTDOWN = 3;
 const STEP = 60 / DJ_BPM / 4; // 16 分音符（秒）
 const BAR = STEP * 16;
 const BEAT = STEP * 4;
+/** 刷碟的判定時間：長刷是大動作，比節奏應援的 50／100／150 毫秒寬（使用者 2026-10-27 最後一下常按偏） */
+const SCRATCH_WINDOWS: { ms: number; label: Judge; color: string }[] = WINDOWS.map((w, i) => ({ ms: [80, 160, 250][i], label: w.label as Judge, color: w.color }));
 const BEATS = DJ_BARS * 4;
 
 export function djScene(): Scene {
@@ -386,7 +388,7 @@ export function djScene(): Scene {
         for (const k of LAYERS) keys[k].classList.toggle('on', next[k]);
         // 只有點單出現時才能刷碟：一小節內有刷碟點單才亮；外圈慢慢縮到唱盤邊緣時按
         const st = songTime();
-        const i = playing ? SCRATCHES.findIndex((s, n) => !scratchDone[n] && s * STEP - st < BAR && st - s * STEP < WINDOWS[2].ms / 1000) : -1;
+        const i = playing ? SCRATCHES.findIndex((s, n) => !scratchDone[n] && s * STEP - st < BAR && st - s * STEP < SCRATCH_WINDOWS[2].ms / 1000) : -1;
         scratchBtn.classList.toggle('off', i < 0);
         if (i >= 0) {
           const d = Math.max(0, (SCRATCHES[i] * STEP - st) / BAR);
@@ -405,13 +407,19 @@ export function djScene(): Scene {
           return;
         }
         const st = songTime();
-        const i = SCRATCHES.findIndex((s, n) => !scratchDone[n] && Math.abs(s * STEP - st) <= WINDOWS[2].ms / 1000);
+        // 唱盤亮著（刷碟點單前一小節內）按下一定會刷、有聲音；太早按算漏掉（使用者 2026-10-27：按偏時完全沒反應，以為壞了）
+        const i = SCRATCHES.findIndex((s, n) => !scratchDone[n] && s * STEP - st < BAR && st - s * STEP <= SCRATCH_WINDOWS[2].ms / 1000);
         if (i < 0) return;
         scratchDone[i] = true;
         const dt = Math.abs(SCRATCHES[i] * STEP - st) * 1000;
-        const w = WINDOWS.find((x) => dt <= x.ms)!;
-        tally.scratch[w.label as Judge]++;
-        judge = { label: `刷碟 ${w.label}`, color: w.color, at: performance.now() };
+        const w = SCRATCH_WINDOWS.find((x) => dt <= x.ms);
+        if (w) {
+          tally.scratch[w.label]++;
+          judge = { label: `刷碟 ${w.label}`, color: w.color, at: performance.now() };
+        } else {
+          tally.scratch.漏掉++;
+          judge = { label: '刷碟太早', color: '#9a93a8', at: performance.now() };
+        }
         // 刷碟聲從按下的這一刻開始，長刷一小節（每八分音符來回一下）；其他聲音壓到一半
         const now = audio().currentTime;
         scratchSound(now, SCRATCH_STEPS * STEP, SCRATCH_STEPS / 2);
@@ -554,7 +562,7 @@ export function djScene(): Scene {
           }
           // 錯過的刷碟
           SCRATCHES.forEach((s, i) => {
-            if (!scratchDone[i] && st - s * STEP > WINDOWS[2].ms / 1000) {
+            if (!scratchDone[i] && st - s * STEP > SCRATCH_WINDOWS[2].ms / 1000) {
               scratchDone[i] = true;
               tally.scratch.漏掉++;
               judge = { label: '刷碟漏掉', color: '#9a93a8', at: now };
@@ -570,7 +578,7 @@ export function djScene(): Scene {
         const layersNow = nowBeat >= 0 && played[nowBeat] ? LAYERS.filter((k) => played[nowBeat][k]).length : 0;
         const sp = scratchAt === null ? null : (now - scratchAt) / (SCRATCH_STEPS * STEP * 1000);
         const scratchP = sp !== null && sp < 1 ? sp : null;
-        const cueI = playing && scratchP === null ? SCRATCHES.findIndex((x, n) => !scratchDone[n] && x * STEP - st < BAR && st - x * STEP < WINDOWS[2].ms / 1000) : -1;
+        const cueI = playing && scratchP === null ? SCRATCHES.findIndex((x, n) => !scratchDone[n] && x * STEP - st < BAR && st - x * STEP < SCRATCH_WINDOWS[2].ms / 1000) : -1;
         const cue = cueI >= 0 ? Math.max(0, (SCRATCHES[cueI] * STEP - st) / BAR) : null;
         const s: ClubState = { beat, layers: playing ? layersNow : 0, scratch: scratchP, cue, order: orderState(st) };
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);

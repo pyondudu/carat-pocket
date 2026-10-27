@@ -49,7 +49,7 @@ export const sameMix = (a: DjLayers, b: DjLayers) => a.drums === b.drums && a.ba
 
 export type Judge = '完美' | '很好' | '還行';
 export const SCRATCH_POINTS: Record<Judge, number> = { 完美: 300, 很好: 210, 還行: 120 };
-export const MIX_POINT = 25; // 每一拍
+export const MIX_POINT = 50; // 每一拍（點單每小節一張後，判定的拍數變少，從 25 調高，點單和刷碟的總分才差不多）
 /** 點單剛換上的頭幾拍不判定 */
 export const GRACE_BEATS = 2;
 /** 金幣上限（全部做對時拿滿；暫定和節奏應援的普通一樣） */

@@ -62,6 +62,13 @@ export function feedSpecial(pet: PetState): void {
   pet.stats.mood = clamp(pet.stats.mood + SPECIAL_MOOD);
 }
 
+/** 巧克力：心情 +20（使用者 2026-10-27） */
+export const CHOCOLATE_MOOD = 20;
+
+export function feedChocolate(pet: PetState): void {
+  pet.stats.mood = clamp(pet.stats.mood + CHOCOLATE_MOOD);
+}
+
 /** 小遊戲（手搖飲、節奏應援）一律體力 −10、心情 +10（使用者 2026-10-27 決定） */
 export const GAME_ENERGY = 10;
 export const GAME_MOOD = 10;

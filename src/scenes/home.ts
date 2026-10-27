@@ -3,7 +3,7 @@
 import { CHARACTERS, getCharacter, type Character } from '../data/characters';
 import { INVITE_PRICE } from '../data/shop';
 import { characterCanvas, contentBox, drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
-import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, SPECIAL_HUNGER, SPECIAL_MOOD, STAT_LABELS, type Action, type PetStats } from '../pet';
+import { applyInvite, CHOCOLATE_MOOD, doAction, feedChocolate, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, SPECIAL_HUNGER, SPECIAL_MOOD, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
 import { DAILY_FOOD, dailyFoodMessage, GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
 import { foodIcon, h, modal, toast } from '../ui';
@@ -39,7 +39,7 @@ export function homeScene(): Scene {
 
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
-        food.replaceChildren(`🍙 ${state.food}`, ...(state.specialFood ? [' ', foodIcon(char.specialIcon), ` ${state.specialFood}`] : []));
+        food.replaceChildren(`🍙 ${state.food}`, ...(state.specialFood ? [' ', foodIcon(char.specialIcon), ` ${state.specialFood}`] : []), ...(state.chocolate ? [` 🍫 ${state.chocolate}`] : []));
         for (const [k, fill] of bars) {
           const v = pet.stats[k];
           fill.style.width = `${v}%`;
@@ -77,7 +77,7 @@ export function homeScene(): Scene {
       const feedMenu = () => {
         tick();
         if (pet.sleeping) return toast('噓…正在睡覺');
-        if (state.food <= 0 && state.specialFood <= 0) return toast(`沒有食物了，去商店買吧\n（每天早上 9:00 會發 ${DAILY_FOOD} 個）`);
+        if (state.food <= 0 && state.specialFood <= 0 && state.chocolate <= 0) return toast(`沒有食物了，去商店買吧\n（每天早上 9:00 會發 ${DAILY_FOOD} 個）`);
         const option = (icon: string, label: string, count: number, note: string, eat: () => string) => {
           const b = h('button', { className: 'feed-option', disabled: count <= 0 }, h('strong', {}, foodIcon(icon), ` ${label} ×${count}`), h('small', { textContent: note }));
           b.onclick = () => {
@@ -102,6 +102,11 @@ export function homeScene(): Scene {
               state.specialFood--;
               feedSpecial(pet);
               return `${char.specialFood}！最喜歡了！`;
+            }),
+            option('🍫', '巧克力', state.chocolate, `心情 +${CHOCOLATE_MOOD}`, () => {
+              state.chocolate--;
+              feedChocolate(pet);
+              return '甜甜的，好開心～';
             }),
           ),
           h('button', { className: 'secondary', textContent: '🛍️ 去商店買', onclick: () => (close(), go('shop')) }),

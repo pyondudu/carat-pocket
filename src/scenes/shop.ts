@@ -1,8 +1,8 @@
 // 商店：買一般食物、本命的特殊食物，用金幣解鎖夥伴（可以邀請來房間作客＋拿到專屬原料，養成只有本命）
 
 import { CHARACTERS, getCharacter, type Character } from '../data/characters';
-import { FOOD_PRICE, SPECIAL_FOOD_PRICE } from '../data/shop';
-import { SPECIAL_HUNGER, SPECIAL_MOOD } from '../pet';
+import { CHOCOLATE_PRICE, FOOD_PRICE, SPECIAL_FOOD_PRICE } from '../data/shop';
+import { CHOCOLATE_MOOD, SPECIAL_HUNGER, SPECIAL_MOOD } from '../pet';
 import { characterCanvas } from '../draw';
 import { go, type Scene } from '../router';
 import { FOOD_CAP, save, state } from '../state';
@@ -13,11 +13,12 @@ export function shopScene(): Scene {
     mount(root) {
       const main = getCharacter(state.mainId!);
       const coins = h('span');
-      const owned = { food: h('small'), special: h('small') };
+      const owned = { food: h('small'), special: h('small'), chocolate: h('small') };
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
         owned.food.textContent = `持有 ${state.food} 個`;
         owned.special.textContent = `持有 ${state.specialFood} 個`;
+        owned.chocolate.textContent = `持有 ${state.chocolate} 個`;
       };
 
       const pay = (price: number): boolean => {
@@ -56,6 +57,14 @@ export function shopScene(): Scene {
           save();
           refresh();
           toast(`買了 1 個${main.specialFood}`);
+        }),
+        item('🍫', '巧克力', `心情 +${CHOCOLATE_MOOD}`, CHOCOLATE_PRICE, owned.chocolate, () => {
+          if (state.chocolate >= FOOD_CAP) return toast(`巧克力最多只能放 ${FOOD_CAP} 個`);
+          if (!pay(CHOCOLATE_PRICE)) return;
+          state.chocolate++;
+          save();
+          refresh();
+          toast('買了 1 個巧克力');
         }),
       );
 

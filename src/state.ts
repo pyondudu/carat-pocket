@@ -4,14 +4,14 @@ import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 6; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt
+const VERSION = 7; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
 /** 每天早上 9:00 發 3 個紫菜包飯；好幾天沒開也只發一次（使用者 2026-10-27 決定） */
 export const DAILY_FOOD = 3;
 const DAILY_HOUR = 9;
-/** 紫菜包飯最多放 30 個（每日發放和商店都算） */
+/** 紫菜包飯、巧克力各最多放 30 個（紫菜包飯的每日發放和商店都算） */
 export const FOOD_CAP = 30;
 
 /** 最近一次已經過去的當地 9:00 */
@@ -35,6 +35,8 @@ export interface GameState {
   codex: Record<string, { count: number; best: number }>;
   /** 持有的本命特殊食物數量 */
   specialFood: number;
+  /** 持有的巧克力數量 */
+  chocolate: number;
   /** 來房間作客的夥伴；until 是回家的時間 */
   guest: { id: string; until: number } | null;
   /** 節奏應援紀錄：key 是「曲子 id:難度」，best 最高分、plays 玩過幾次 */
@@ -43,7 +45,7 @@ export interface GameState {
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -78,6 +80,10 @@ function load(): GameState {
         delete (data as { foodProgress?: number }).foodProgress;
         data.dailyFoodAt = lastDailyTime();
         data.version = 6;
+      }
+      if (data.version === 6) {
+        data.chocolate = 0;
+        data.version = 7;
       }
       if (data.version === VERSION) return renameIds(data);
     }

@@ -1,12 +1,14 @@
 // Disc Jockey 小遊戲（使用者 2026-10-27 定名）：疊音軌 Mix＋刷碟。本命戴耳機站在 DJ 台後面，背景是夜店
 // 流程照節奏應援：說明視窗 → 開始 → 3、2、1 倒數 → 16 小節約 31 秒 → 結算。規則在 src/dj.ts，曲子在 src/data/djsong.ts
+// 操作（使用者 2026-10-27 改版）：房間下面一排像素圖示亮起要開的音軌、圖示下倒數條是這張點單還剩多久；
+// 下面三顆音軌鍵（按了亮起、再按變灰）、一個圓形唱盤（刷碟）
 
 import { audio, duck, heardTime, scratch as scratchSound, tone } from '../audio';
 import { CHARACTERS } from '../data/characters';
 import { DJ_BARS, DJ_BPM, DJ_SONG } from '../data/djsong';
-import { DJ_RANK_LABEL, djScore, MIX_LABEL, ORDERS, orderAt, sameMix, SCRATCH_STEPS, SCRATCHES, wanted, type DjTally, type Judge } from '../dj';
+import { DJ_RANK_LABEL, djScore, GRACE_BEATS, MIX_LABEL, ORDERS, orderAt, sameMix, SCRATCH_STEPS, SCRATCHES, wanted, type DjTally, type Judge } from '../dj';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
-import { playDjBar, type DjLayers } from '../music';
+import { playDjBeat, type DjLayers } from '../music';
 import { applyDj, djBlocked, GAME_ENERGY, GAME_MOOD } from '../pet';
 import { go, type Scene } from '../router';
 import { mainPet, passTime, save, state } from '../state';
@@ -19,14 +21,83 @@ const PINK = '#f78fb0';
 const BLUE = '#6f9ee8';
 const NEON_PINK = '#ff7ab8';
 const NEON_BLUE = '#6fd0ff';
-const CROWD = '#1c1238';
+const LAYERS: (keyof DjLayers)[] = ['drums', 'bass', 'lead'];
 
 /** 夜店畫面的狀態：layers＝開著的音軌數（0～3）、scratch＝刷碟進度 0～1（沒在刷是 null） */
 export interface ClubState {
   beat: number;
   layers: number;
   scratch: number | null;
-  cheer: boolean; // 點單做對時觀眾舉手
+  /** 點單圖示：want＝要開的音軌（null＝還沒開始，全暗）、match＝開關跟點單一樣（null＝不顯示燈）、left＝倒數條 0～1、hurry＝倒數最後一小節 */
+  order: { want: DjLayers | null; match: Record<keyof DjLayers, boolean> | null; left: number; hurry: boolean };
+}
+
+/** 三個音軌的像素圖示（o＝外框，其他字母見 ICON_COLORS）：小鼓、電吉他、鋼琴鍵 */
+const ICON_ART: Record<keyof DjLayers, string[]> = {
+  // 小鼓（使用者 2026-10-27 給的參考：白鼓面、灰鼓框、紅鼓身加直的金屬扣，不要鼓棒）
+  drums: [
+    '..ooooooooo..',
+    '.oshhhhhhhso.',
+    'oshhhhhhhhhso',
+    'onsssssssssno',
+    'orlrmrlrmrlro',
+    'orlrnrlrnrlro',
+    'orlrnrlrnrlro',
+    'orrrmrrrmrrro',
+    'onnnnnnnnnnno',
+    '.ooooooooooo.',
+  ],
+  // 電吉他（使用者 2026-10-27 嫌原本像音符，重畫）
+  bass: [
+    '..........ooo',
+    '.........oggo',
+    '........okgo.',
+    '.......okoo..',
+    '..ooo.oko....',
+    '.orrrokro....',
+    '.orrrkrro....',
+    'orrwwrrrro...',
+    'orrrrrrrro...',
+    '.oooooooo....',
+  ],
+  // 鋼琴黑白鍵（使用者 2026-10-27：單純黑白鍵就好，不要上面的面板）
+  lead: [
+    'oooooooooooooo',
+    'owbwbwwbwbwbwo',
+    'owbwbwwbwbwbwo',
+    'owbwbwwbwbwbwo',
+    'owiwiwwiwiwiwo',
+    'owiwiwwiwiwiwo',
+    'oooooooooooooo',
+  ],
+};
+const ICON_COLORS: Record<string, string> = {
+  o: INK, h: '#f4f0e8', r: '#d8202a', d: '#a83a38', s: '#d4d4da', n: '#9a9aa2', m: '#ececf0', l: '#ee5a66', g: '#f2c94c', k: '#8a5a3a', w: '#ffffff', b: INK, i: '#b8b4c6',
+};
+/** 每個音軌亮起時的框線顏色 */
+const TRACK_COLOR: Record<keyof DjLayers, string> = { drums: NEON_PINK, bass: '#c79bff', lead: NEON_BLUE };
+
+const iconCache = new Map<string, HTMLCanvasElement>();
+/** 圖示畫成 1 格 1 像素的小畫布；dim＝暗掉的剪影 */
+function iconCanvas(k: keyof DjLayers, dim: boolean): HTMLCanvasElement {
+  const key = k + (dim ? ':dim' : '');
+  let cv = iconCache.get(key);
+  if (!cv) {
+    const art = ICON_ART[k];
+    cv = document.createElement('canvas');
+    cv.width = Math.max(...art.map((r) => r.length));
+    cv.height = art.length;
+    const g = cv.getContext('2d')!;
+    art.forEach((row, y) =>
+      [...row].forEach((c, x) => {
+        if (c === '.') return;
+        g.fillStyle = dim ? (c === 'o' ? '#241c44' : '#3b3166') : ICON_COLORS[c];
+        g.fillRect(x, y, 1, 1);
+      }),
+    );
+    iconCache.set(key, cv);
+  }
+  return cv;
 }
 
 function px(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, c: string): void {
@@ -117,10 +188,12 @@ function turntable(ctx: CanvasRenderingContext2D, cx: number, cy: number, spin: 
   px(ctx, Math.round(cx + Math.cos(spin) * 4), Math.round(cy + Math.sin(spin) * 2), 1, 1, '#d8d4e8');
 }
 
-/** 前景：DJ 台（擋住角色下半身）＋最前排觀眾剪影 */
+const BOOTH_TOP = 41;
+
+/** 前景：DJ 台（擋住角色下半身）＋台子下面一排點單圖示（原本是觀眾，使用者 2026-10-27 改的） */
 export function drawBooth(ctx: CanvasRenderingContext2D, s: ClubState): void {
   const { beat } = s;
-  const top = 46;
+  const top = BOOTH_TOP;
   // 唱盤：平常一直轉，刷碟時左邊那台來回轉
   const spin = beat * Math.PI;
   const rock = s.scratch !== null ? Math.sin(s.scratch * Math.PI * 6) * 1.6 : spin;
@@ -137,32 +210,40 @@ export function drawBooth(ctx: CanvasRenderingContext2D, s: ClubState): void {
     px(ctx, 27 + i * 3, top - 2 + ((i + Math.floor(beat)) % 2), 1, 1, i < s.layers + 1 ? NEON_BLUE : '#6a6488');
   }
   // 台子正面：深色面板＋跑馬燈
-  px(ctx, 3, top + 3, ROOM - 6, 9, '#1b1830');
+  px(ctx, 3, top + 3, ROOM - 6, 4, '#1b1830');
   px(ctx, 3, top + 3, ROOM - 6, 1, INK);
   const run = Math.floor(beat * 2);
   for (let x = 5; x < ROOM - 5; x += 3) {
     const k = (x / 3 + run) % 4;
-    px(ctx, x, top + 6, 2, 1, k === 0 ? NEON_PINK : k === 2 ? NEON_BLUE : '#3b3460');
+    px(ctx, x, top + 5, 2, 1, k === 0 ? NEON_PINK : k === 2 ? NEON_BLUE : '#3b3460');
   }
-  px(ctx, 3, top + 9, ROOM - 6, 1, '#2a2546');
-  // 觀眾：一排剪影跟拍子點頭，做對時舉手
-  const bob = (beat % 1) < 0.5 ? 0 : 1;
-  for (let i = 0; i < 8; i++) {
-    const x = 2 + i * 8 + (i % 2 ? 2 : 0);
-    const y = 59 + ((i % 2 ? bob : 1 - bob));
-    for (let yy = -3; yy <= 2; yy++)
-      for (let xx = -3; xx <= 3; xx++) if (xx * xx + yy * yy <= 9) px(ctx, x + xx, y + yy, 1, 1, CROWD);
-    px(ctx, x - 4, y + 3, 9, 4, CROWD);
-    // 頭頂和肩膀的霓虹反光，剪影才不會跟背景混在一起
-    const rim = i % 2 ? '#4f6fc0' : '#b0508e';
-    px(ctx, x - 2, y - 3, 4, 1, rim);
-    px(ctx, x - 3, y - 2, 1, 1, rim);
-    px(ctx, x - 4, y + 3, 2, 1, rim);
-    if (s.cheer && i % 3 !== 1) {
-      px(ctx, x + 3, y - 6, 1, 6, CROWD);
-      px(ctx, x + 3, y - 7, 1, 1, i % 2 ? NEON_BLUE : NEON_PINK);
+  drawOrder(ctx, s);
+}
+
+/** 點單圖示：三格像素圖示，要開的亮起來、不要的暗掉；右上角小燈＝開關對不對；下面倒數條＝這張點單還剩多久 */
+function drawOrder(ctx: CanvasRenderingContext2D, s: ClubState): void {
+  const y0 = BOOTH_TOP + 7;
+  px(ctx, 0, y0, ROOM, ROOM - y0, '#120c28');
+  px(ctx, 0, y0, ROOM, 1, INK);
+  const { want, match, left, hurry } = s.order;
+  LAYERS.forEach((k, n) => {
+    const cx = 13 + n * 19;
+    const x = cx - 8;
+    const y = y0 + 1;
+    const on = !!want?.[k];
+    px(ctx, x, y, 16, 12, on ? TRACK_COLOR[k] : '#2a2248');
+    px(ctx, x + 1, y + 1, 14, 10, on ? '#2c1f5a' : '#17112f');
+    const ic = iconCanvas(k, !on);
+    ctx.imageSmoothingEnabled = false; // 角色圖會把平滑打開，像素圖示要關掉才不會糊
+    ctx.drawImage(ic, Math.round(cx - ic.width / 2), Math.round(y + 6 - ic.height / 2));
+    if (match) {
+      px(ctx, x + 13, y + 1, 2, 2, match[k] ? '#6fe0a8' : '#ff5a5a');
     }
-  }
+  });
+  // 倒數條：從滿慢慢縮短，最後一小節變粉紅色閃
+  const w = Math.round(52 * Math.max(0, Math.min(1, left)));
+  px(ctx, 6, ROOM - 2, 52, 1, '#2a2248');
+  if (!hurry || Math.floor(s.beat * 2) % 2 === 0) px(ctx, 6, ROOM - 2, w, 1, hurry ? NEON_PINK : '#e8e6f2');
 }
 
 /** 刷碟時的像素字「Zzzik!」＋動作線（畫在左邊唱盤上方，房間格座標） */
@@ -173,7 +254,7 @@ function drawZzzik(ctx: CanvasRenderingContext2D, p: number): void {
   ctx.textAlign = 'center';
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = INK;
-  const y = 37 - p * 3;
+  const y = BOOTH_TOP - 9 - p * 3;
   const x = 13 + Math.sin(p * Math.PI * 6) * 1.5;
   ctx.strokeText('Zzzik!', x, y);
   ctx.fillStyle = NEON_PINK;
@@ -182,7 +263,7 @@ function drawZzzik(ctx: CanvasRenderingContext2D, p: number): void {
   ctx.lineWidth = 0.6;
   for (const k of [-1, 1]) {
     ctx.beginPath();
-    ctx.arc(13, 44, 8 + (k + 1) * 1.5, Math.PI * 1.1, Math.PI * 1.45);
+    ctx.arc(13, BOOTH_TOP - 2, 8 + (k + 1) * 1.5, Math.PI * 1.1, Math.PI * 1.45);
     ctx.stroke();
   }
   ctx.restore();
@@ -191,12 +272,8 @@ function drawZzzik(ctx: CanvasRenderingContext2D, p: number): void {
 const COUNTDOWN = 3;
 const STEP = 60 / DJ_BPM / 4; // 16 分音符（秒）
 const BAR = STEP * 16;
-const LAYERS: (keyof DjLayers)[] = ['drums', 'bass', 'lead'];
-const ICON: Record<keyof DjLayers, string> = { drums: '🥁', bass: '🎸', lead: '🎹' };
-const LANE_W = ROOM * ZOOM;
-const LANE_H = 64;
-const JUDGE_X = 34; // 點單軌道的判定線（像素）
-const PX_PER_BAR = 64;
+const BEAT = STEP * 4;
+const BEATS = DJ_BARS * 4;
 
 export function djScene(): Scene {
   let raf = 0;
@@ -226,14 +303,14 @@ export function djScene(): Scene {
       const coins = h('span', { className: 'coins', textContent: `🪙 ${state.coins}` });
       let playing = false;
       let t0 = 0; // 第一拍的音訊時間
-      let scheduled = 0; // 已經排進去幾個小節
-      /** 按鈕目前的開關（下一個小節線才生效） */
+      let scheduled = 0; // 已經排進去幾拍
+      /** 開關目前的狀態（下一拍生效） */
       const next: DjLayers = { drums: false, bass: false, lead: false };
-      /** 每個小節實際排進去的組合 */
+      /** 每一拍實際排進去的組合 */
       const played: DjLayers[] = [];
-      /** 每個小節的判定結果（null＝前奏不算） */
+      /** 每個小節的判定結果：要判定的拍全對＝true（null＝這小節沒有要判定的拍） */
       const barOk: (boolean | null)[] = [];
-      let tally: DjTally = { mixOk: 0, mixBars: 0, scratch: { 完美: 0, 很好: 0, 還行: 0, 漏掉: 0 } };
+      let tally: DjTally = { mixOk: 0, mixBeats: 0, scratch: { 完美: 0, 很好: 0, 還行: 0, 漏掉: 0 } };
       let scratchDone: boolean[] = [];
       let scratchAt: number | null = null; // 開始刷碟的 performance.now()
       let judge: { label: string; color: string; at: number } | null = null;
@@ -242,42 +319,49 @@ export function djScene(): Scene {
       let lastShown = -1; // 最後一個顯示過判定的小節
 
       const room = h('canvas', { className: 'pixel room', width: ROOM * ZOOM, height: ROOM * ZOOM });
-      const lane = h('canvas', { className: 'pixel lane', width: LANE_W, height: LANE_H });
       const ctx = room.getContext('2d')!;
-      const lctx = lane.getContext('2d')!;
       const panel = h('div', { className: 'rhythm-panel' });
       const info = h('div', { className: 'shake-info' });
 
       const songTime = () => heardTime() - t0;
 
-      // 排程：每 25 毫秒看一次，小節開始前 0.12 秒才用當下按鈕的開關排進去，所以在小節線前按都來得及
+      // 排程：每 25 毫秒看一次，每一拍開始前 0.12 秒才用當下開關的狀態排進去，所以撥了開關下一拍就聽得到
       const schedule = () => {
         if (!playing) return;
         const ac = audio();
-        while (scheduled < DJ_BARS && t0 + scheduled * BAR < ac.currentTime + 0.12) {
+        while (scheduled < BEATS && t0 + scheduled * BEAT < ac.currentTime + 0.12) {
           const i = scheduled;
+          const bar = Math.floor(i / 4);
           const on = { ...next };
-          playDjBar(DJ_SONG[i], t0 + i * BAR, STEP, on);
+          playDjBeat(DJ_SONG[bar], i % 4, t0 + i * BEAT, STEP, on);
           played[i] = on;
-          const o = orderAt(i);
-          if (o && !DJ_SONG[i].last) {
+          // 點單剛換的頭 GRACE_BEATS 拍不判定；最後一小節（收尾）也不判定
+          const o = orderAt(bar);
+          if (o && !DJ_SONG[bar].last && i - o.from * 4 >= GRACE_BEATS) {
             const ok = sameMix(on, wanted(o.mix));
-            barOk[i] = ok;
-            tally.mixBars++;
+            tally.mixBeats++;
             if (ok) tally.mixOk++;
-          } else barOk[i] = null;
+            barOk[bar] = (barOk[bar] ?? true) && ok;
+          } else barOk[bar] ??= null;
           scheduled++;
         }
       };
 
       const keys = {} as Record<keyof DjLayers, HTMLButtonElement>;
-      const scratchBtn = h('button', { className: 'dj-scratch', textContent: '💿 刷碟' });
+      const ring = h('span', { className: 'dj-ring' });
+      const scratchBtn = h('button', { className: 'dj-disc off', ariaLabel: '刷碟' }, ring, h('span', { className: 'dj-vinyl' }, h('span', { className: 'dj-label', textContent: '刷碟' })));
       const refreshKeys = () => {
         for (const k of LAYERS) keys[k].classList.toggle('on', next[k]);
-        // 只有點單出現時才能刷碟：前後一小節內有刷碟點單才亮
+        // 只有點單出現時才能刷碟：一小節內有刷碟點單才亮；外圈慢慢縮到唱盤邊緣時按
         const st = songTime();
-        const near = playing && SCRATCHES.some((s, i) => !scratchDone[i] && s * STEP - st < BAR && st - s * STEP < WINDOWS[2].ms / 1000);
-        scratchBtn.classList.toggle('off', !near);
+        const i = playing ? SCRATCHES.findIndex((s, n) => !scratchDone[n] && s * STEP - st < BAR && st - s * STEP < WINDOWS[2].ms / 1000) : -1;
+        scratchBtn.classList.toggle('off', i < 0);
+        if (i >= 0) {
+          const d = Math.max(0, (SCRATCHES[i] * STEP - st) / BAR);
+          ring.style.transform = `scale(${(1 + d * 0.45).toFixed(3)})`;
+          ring.style.opacity = '1';
+        } else ring.style.opacity = '0';
+        scratchBtn.classList.toggle('spin', scratchAt !== null && performance.now() - scratchAt < SCRATCH_STEPS * STEP * 1000);
       };
 
       press = (k) => {
@@ -305,7 +389,8 @@ export function djScene(): Scene {
       };
 
       for (const k of LAYERS) {
-        const b = h('button', { className: `dj-key ${k}`, textContent: `${ICON[k]} ${MIX_LABEL[k]}` });
+        const icon = h('img', { className: 'dj-icon', src: iconCanvas(k, false).toDataURL(), alt: '' });
+        const b = h('button', { className: `dj-switch ${k}` }, icon, h('span', { textContent: MIX_LABEL[k] }));
         b.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           press(k);
@@ -331,7 +416,7 @@ export function djScene(): Scene {
         barOk.length = 0;
         lastShown = -1;
         for (const k of LAYERS) next[k] = false;
-        tally = { mixOk: 0, mixBars: 0, scratch: { 完美: 0, 很好: 0, 還行: 0, 漏掉: 0 } };
+        tally = { mixOk: 0, mixBeats: 0, scratch: { 完美: 0, 很好: 0, 還行: 0, 漏掉: 0 } };
         scratchDone = SCRATCHES.map(() => false);
         scratchAt = null;
         judge = null;
@@ -339,7 +424,7 @@ export function djScene(): Scene {
         clearInterval(timer);
         timer = window.setInterval(schedule, 25);
         schedule();
-        panel.replaceChildren(info, h('div', { className: 'dj-keys' }, ...LAYERS.map((k) => keys[k])), scratchBtn, h('p', { className: 'hint', textContent: '電腦可以用 1／2／3 和空白鍵' }));
+        panel.replaceChildren(info, h('div', { className: 'dj-keys' }, ...LAYERS.map((k) => keys[k])), h('div', { className: 'dj-deck' }, scratchBtn), h('p', { className: 'hint', textContent: '電腦可以用 1／2／3 和空白鍵' }));
         refreshKeys();
       };
 
@@ -365,7 +450,7 @@ export function djScene(): Scene {
           h(
             'div',
             { className: 'rhythm-result' },
-            row('點單做對', `${tally.mixOk}／${tally.mixBars} 小節`),
+            row('點單做對', `${tally.mixBeats ? Math.round((tally.mixOk / tally.mixBeats) * 100) : 0}%`),
             row('刷碟完美', String(tally.scratch.完美)),
             row('刷碟很好', String(tally.scratch.很好)),
             row('刷碟還行', String(tally.scratch.還行)),
@@ -388,8 +473,8 @@ export function djScene(): Scene {
       ready();
       const closeIntro = modal(
         h('h2', { textContent: '🎧 Disc Jockey' }),
-        h('p', { textContent: '照著點單切換鼓、低音、旋律，\n看到唱片就按刷碟！' }),
-        h('p', { className: 'credit', textContent: '切換會在下一個小節生效' }),
+        h('p', { textContent: '房間下面亮起哪個圖示，\n就把那個開關打開！' }),
+        h('p', { textContent: '唱盤發光時，\n等外圈縮到唱盤邊緣按下刷碟' }),
         h('button', { className: 'primary', textContent: '好！', onclick: () => closeIntro() }),
       );
 
@@ -398,50 +483,25 @@ export function djScene(): Scene {
           'div',
           { className: 'screen rhythm' },
           h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎧 Disc Jockey' }), coins),
-          h('div', { className: 'rhythm-stage' }, room, lane),
+          h('div', { className: 'rhythm-stage' }, room),
           panel,
         ),
       );
       window.addEventListener('keydown', onKey);
 
-      /** 點單軌道：點單卡片從右往左流到判定線，卡片上亮著的圖示是要開的音軌；唱片圖示是刷碟點單 */
-      const drawLane = (st: number) => {
-        lctx.fillStyle = '#16102e';
-        lctx.fillRect(0, 0, LANE_W, LANE_H);
-        const xOf = (t: number) => JUDGE_X + ((t - st) / BAR) * PX_PER_BAR;
-        lctx.font = '15px "Noto Color Emoji", "Apple Color Emoji", sans-serif';
-        lctx.textAlign = 'center';
-        lctx.textBaseline = 'middle';
-        ORDERS.forEach((o, i) => {
-          const end = ORDERS[i + 1]?.from ?? DJ_BARS - 1;
-          const x0 = xOf(o.from * BAR) + 2;
-          const x1 = xOf(end * BAR) - 2;
-          if (x1 < 0 || x0 > LANE_W) return;
-          const now = st >= o.from * BAR && st < end * BAR;
-          lctx.fillStyle = now ? '#3a2c6e' : '#271d4c';
-          lctx.fillRect(x0, 8, x1 - x0, 34);
-          lctx.strokeStyle = now ? '#ff7ab8' : '#5a4a90';
-          lctx.lineWidth = 2;
-          lctx.strokeRect(x0, 8, x1 - x0, 34);
-          const want = wanted(o.mix);
-          LAYERS.forEach((k, n) => {
-            lctx.globalAlpha = want[k] ? 1 : 0.18;
-            lctx.fillText(ICON[k], x0 + 16 + n * 22, 25);
-          });
-          lctx.globalAlpha = 1;
-        });
-        // 刷碟點單：唱片圖示＋長刷的長度
-        SCRATCHES.forEach((s, i) => {
-          const x = xOf(s * STEP);
-          const x1 = xOf((s + SCRATCH_STEPS) * STEP);
-          if (x1 < 0 || x > LANE_W) return;
-          lctx.fillStyle = scratchDone[i] ? '#5a4a90' : '#ff7ab8';
-          lctx.fillRect(x, 50, x1 - x, 4);
-          lctx.fillText('💿', x, 52);
-        });
-        // 判定線
-        lctx.fillStyle = '#ffffff';
-        lctx.fillRect(JUDGE_X - 1, 2, 2, LANE_H - 4);
+      /** 點單圖示的狀態：前奏時先亮第一張點單，倒數條數到它開始 */
+      const orderState = (st: number): ClubState['order'] => {
+        if (!playing || st < 0) return { want: null, match: null, left: 1, hurry: false };
+        const bar = Math.max(0, Math.floor(st / BAR));
+        if (bar >= DJ_BARS - 1) return { want: null, match: null, left: 0, hurry: false };
+        const cur = orderAt(bar);
+        const idx = cur ? ORDERS.indexOf(cur) : -1;
+        const shown = cur ?? ORDERS[0];
+        const from = cur ? cur.from : 0;
+        const end = ORDERS[idx + 1]?.from ?? DJ_BARS - 1;
+        const want = wanted(shown.mix);
+        const match = cur ? (Object.fromEntries(LAYERS.map((k) => [k, next[k] === want[k]])) as Record<keyof DjLayers, boolean>) : null;
+        return { want, match, left: (end * BAR - st) / ((end - from) * BAR), hurry: end * BAR - st < BAR };
       };
 
       const draw = (now: number) => {
@@ -449,13 +509,13 @@ export function djScene(): Scene {
         const beat = playing ? st / (STEP * 4) : now / (60000 / DJ_BPM);
         const bar = Math.floor(st / BAR);
         if (playing) {
-          // 小節開始時顯示上一個判定（點單做對或錯）
-          if (bar >= 0 && bar !== lastShown && barOk[bar] !== undefined) {
-            lastShown = bar;
-            if (barOk[bar] === true) {
+          // 小節結束時顯示這小節的判定（點單做對或錯）
+          if (bar >= 1 && bar - 1 > lastShown) {
+            lastShown = bar - 1;
+            if (barOk[bar - 1] === true) {
               combo++;
               judge = { label: combo >= 2 ? `Mix OK ×${combo}` : 'Mix OK', color: '#9ff0c4', at: now };
-            } else if (barOk[bar] === false) {
+            } else if (barOk[bar - 1] === false) {
               combo = 0;
               judge = { label: '點單不對', color: '#9a93a8', at: now };
             }
@@ -470,21 +530,21 @@ export function djScene(): Scene {
           });
           refreshKeys();
           const left = DJ_BARS * BAR - st;
-          const o = orderAt(Math.max(0, bar + 1));
-          const text = `⏱ ${Math.max(0, Math.ceil(Math.min(left, DJ_BARS * BAR)))} 秒${o ? '　下一張：' + [...o.mix].map((c) => ICON[c === 'd' ? 'drums' : c === 'b' ? 'bass' : 'lead']).join('') : ''}`;
+          const text = `⏱ ${Math.max(0, Math.ceil(Math.min(left, DJ_BARS * BAR)))} 秒`;
           if (info.textContent !== text) info.textContent = text;
           if (left < -0.8) finish();
         }
-        const layersNow = bar >= 0 && played[bar] ? LAYERS.filter((k) => played[bar][k]).length : 0;
+        const nowBeat = Math.floor(st / BEAT);
+        const layersNow = nowBeat >= 0 && played[nowBeat] ? LAYERS.filter((k) => played[nowBeat][k]).length : 0;
         const sp = scratchAt === null ? null : (now - scratchAt) / (SCRATCH_STEPS * STEP * 1000);
         const scratchP = sp !== null && sp < 1 ? sp : null;
-        const s: ClubState = { beat, layers: playing ? layersNow : 0, scratch: scratchP, cheer: !!judge && judge.label.startsWith('Mix OK') && now - judge.at < 600 };
+        const s: ClubState = { beat, layers: playing ? layersNow : 0, scratch: scratchP, order: orderState(st) };
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
         drawClub(ctx, s);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         const height = hasSprite(char) ? 150 : 120;
         const cx = (ROOM * ZOOM) / 2;
-        const bottom = 55 * ZOOM;
+        const bottom = 49 * ZOOM;
         const motion: Motion = { t: now, hopAt };
         if (scratchP !== null) {
           ctx.save();
@@ -518,7 +578,6 @@ export function djScene(): Scene {
           drawCountdown(ctx, n, Math.max(0, n + st));
           ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
-        drawLane(playing ? st : -BAR * 2);
         raf = requestAnimationFrame(draw);
       };
       raf = requestAnimationFrame(draw);

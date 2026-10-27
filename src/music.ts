@@ -1,7 +1,7 @@
 // 編曲：把 songs.ts 的一個小節排成聲音（鼓、低音、和弦、主旋律），時間都排在 AudioContext 上
 // EDM 風格（2026-10-25 使用者覺得銅管老氣）：四拍大鼓、反拍低音、sidechain 和弦、Build-up 接 Drop
 
-import { clap, crash, hat, kick, lead, midi, openHat, pad, pluck, riser, snare, tone } from './audio';
+import { bassSynth, clap, crash, hat, kick, lead, midi, openHat, pad, pluck, riser, snare, tone } from './audio';
 import type { Bar, Chord, DrumStyle, LeadNote } from './data/songs';
 
 /** 鼓與低音的節奏型（16 格，x＝打）：kick 大鼓、clap 拍手、hat 腳踏鈸、open 開放鈸；bass 的 R＝根音 */
@@ -95,30 +95,34 @@ export interface DjBar {
   last: boolean; // 最後一小節
 }
 
-/** 排一個小節：house 四拍大鼓、反拍低音、跟著大鼓吸的和弦 */
-export function playDjBar(bar: DjBar, at: number, step: number, on: DjLayers): void {
-  const t = (s: number) => at + s * step;
-  const beat = step * 4;
-  const notes = [...voicing(bar.chord), voicing(bar.chord)[0] + 12].map(midi);
-  // 和弦：一直開著；鼓沒開時不吸，聽起來比較平
-  pad(at, notes, step * 16, on.drums ? { pump: beat, from: 3200, peak: 0.018 } : { from: 1800, peak: 0.014 });
+/** 排一拍（beat＝這小節第幾拍 0～3，at＝這一拍開始的時間）：house 四拍大鼓、反拍低音、跟著大鼓吸的和弦
+ *  一拍一拍排，Disc Jockey 的開關下一拍就生效；和弦一整個小節一起排（每拍重排會一直重新起音） */
+export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, on: DjLayers): void {
+  const t = (s: number) => at + (s - beat * 4) * step;
+  if (beat === 0) {
+    const notes = [...voicing(bar.chord), voicing(bar.chord)[0] + 12].map(midi);
+    // 和弦：一直開著當底，小聲一點，開關三軌的差別才聽得出來（使用者 2026-10-27 反映疊音軌聽不出混音感）；鼓沒開時不吸
+    pad(at, notes, step * 16, on.drums ? { pump: step * 4, from: 2600, peak: 0.011 } : { from: 1600, peak: 0.009 });
+  }
   if (bar.last) {
-    crash(t(0), 0.2);
-    kick(t(0), 0.9);
-    tone(t(0), midi(bassNote(bar.chord)), step * 12, 'triangle', 0.3);
+    if (beat > 0) return;
+    crash(at, 0.25);
+    kick(at, 1);
+    bassSynth(at, midi(bassNote(bar.chord)), step * 8, 0.14);
     return;
   }
-  for (let s = 0; s < 16; s++) {
+  for (let s = beat * 4; s < beat * 4 + 4; s++) {
     if (on.drums) {
-      if (s % 4 === 0) kick(t(s), 0.9);
+      if (s % 4 === 0) kick(t(s), 1);
       if (s === 4 || s === 12) {
-        clap(t(s), 0.3);
-        snare(t(s), 0.15);
+        clap(t(s), 0.5);
+        snare(t(s), 0.25);
       }
-      if (s % 4 === 2) openHat(t(s), 0.06);
-      else hat(t(s), s % 2 ? 0.02 : 0.035);
+      if (s % 4 === 2) openHat(t(s), 0.13);
+      else hat(t(s), s % 2 ? 0.05 : 0.08);
     }
-    if (on.bass && s % 4 === 2) tone(t(s), midi(bassNote(bar.chord)), step * 1.7, 'triangle', 0.32);
+    // 低音：反拍＋後面一個 16 分音符的滾動低音（house 常見）
+    if (on.bass && s % 4 >= 2) bassSynth(t(s), midi(bassNote(bar.chord)), step * (s % 4 === 2 ? 0.9 : 0.7), s % 4 === 2 ? 0.14 : 0.1);
   }
-  if (on.lead) for (const n of bar.lead) lead(t(n.step), midi(n.midi), n.len * step, true);
+  if (on.lead) for (const n of bar.lead) if (Math.floor(n.step / 4) === beat) lead(t(n.step), midi(n.midi), n.len * step, true, 1.8);
 }

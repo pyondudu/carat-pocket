@@ -173,8 +173,8 @@ function lowpass(t: number, from: number, to = from, dur = 0): BiquadFilterNode 
 }
 
 /** 主旋律：supersaw，bright＝副歌（濾波開比較亮、比較大聲），同時送一份到回音 */
-export function lead(t: number, freq: number, dur: number, bright = true): void {
-  const peak = bright ? 0.03 : 0.022;
+export function lead(t: number, freq: number, dur: number, bright = true, gain = 1): void {
+  const peak = (bright ? 0.03 : 0.022) * gain;
   const g = ac!.createGain();
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(peak, t + 0.008);
@@ -186,6 +186,33 @@ export function lead(t: number, freq: number, dur: number, bright = true): void 
   f.connect(g);
   saws(t, freq, t + dur, [-14, 0, 14], f);
   saws(t, freq * 2, t + dur, [7], f); // 高八度一點點，聲音比較亮
+}
+
+/** 合成低音（Disc Jockey 用）：鋸齒波＋高八度方波，濾波從亮很快變悶；手機喇叭放不出純低頻，所以要有泛音才聽得到 */
+export function bassSynth(t: number, freq: number, dur: number, peak = 0.12): void {
+  const g = ac!.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.005);
+  g.gain.setValueAtTime(peak, t + dur * 0.6);
+  g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  g.connect(master!);
+  const f = lowpass(t, 2400, 500, dur * 0.8);
+  f.Q.value = 6;
+  f.connect(g);
+  const o = ac!.createOscillator();
+  o.type = 'sawtooth';
+  o.frequency.value = freq;
+  o.connect(f);
+  const o2 = ac!.createOscillator();
+  o2.type = 'square';
+  o2.frequency.value = freq * 2;
+  const g2 = ac!.createGain();
+  g2.gain.value = 0.35;
+  o2.connect(g2).connect(f);
+  for (const x of [o, o2]) {
+    x.start(t);
+    x.stop(t + dur + 0.02);
+  }
 }
 
 /** 撥弦（pluck）和弦：鋸齒波，濾波很快從亮變悶 */

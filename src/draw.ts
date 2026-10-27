@@ -3,6 +3,7 @@
 
 import type { Character } from './data/characters';
 import faces from './data/faces.json';
+import { drawHeadphones } from './headphones';
 import { drawFace, drawZzz, EXPRESSIONS, type FaceRig } from './face';
 import type { Mood } from './pet';
 
@@ -288,7 +289,8 @@ export function isHopping(m: Motion): boolean {
 }
 
 /** 畫角色：水平置中於 cx、腳底對齊 bottom、高度約 height 像素；有 motion 時會呼吸、眨眼、跳 */
-export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number, motion?: Motion): void {
+/** headphones：Disc Jockey 小遊戲戴耳機 */
+export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number, motion?: Motion, headphones = false): void {
   const rig = RIGS[c.id];
   const base = rig && images.get(`${c.id}:base`);
   const happy = images.get(`${c.id}:happy`);
@@ -310,6 +312,7 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0);
+    if (headphones) drawHeadphones(ctx as CanvasRenderingContext2D, c.id, happy);
     if (sleeping && motion) drawZzz(ctx, rig, t);
     ctx.restore();
     return;
@@ -323,6 +326,14 @@ export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bo
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, Math.round(cx - w / 2), Math.round(bottom - hh), Math.round(w), Math.round(hh));
+    const happyImg = images.get(`${c.id}:happy`);
+    if (headphones && happyImg) {
+      ctx.save();
+      ctx.translate(Math.round(cx - w / 2), Math.round(bottom - hh));
+      ctx.scale(w / img.width, hh / img.height);
+      drawHeadphones(ctx as CanvasRenderingContext2D, c.id, happyImg);
+      ctx.restore();
+    }
     return;
   }
   // 佔位圖：以整數倍放大，保持像素銳利

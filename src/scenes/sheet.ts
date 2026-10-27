@@ -5,7 +5,7 @@ import { drawCharacter, hasRig, type Pose } from '../draw';
 import type { Scene } from '../router';
 import { h } from '../ui';
 
-const POSES: [Pose, string][] = [['happy', '開心'], ['sad', '難過'], ['sick', '生病'], ['sleep', '睡覺'], ['shake', '搖飲料']];
+const POSES: [Pose | 'dj', string][] = [['happy', '開心'], ['sad', '難過'], ['sick', '生病'], ['sleep', '睡覺'], ['shake', '搖飲料'], ['dj', '戴耳機']];
 const SIZE = 96;
 
 export function sheetScene(): Scene {
@@ -13,7 +13,7 @@ export function sheetScene(): Scene {
   return {
     mount(root) {
       let hopAt: number | undefined;
-      const cells: { ctx: CanvasRenderingContext2D; id: string; pose: Pose }[] = [];
+      const cells: { ctx: CanvasRenderingContext2D; id: string; pose: Pose | 'dj' }[] = [];
       const table = h(
         'table',
         { className: 'sheet' },
@@ -45,7 +45,9 @@ export function sheetScene(): Scene {
           ctx.clearRect(0, 0, SIZE * 2, SIZE * 2);
           const c = CHARACTERS.find((x) => x.id === id)!;
           // 跳的高度要留空間，角色畫小一點
-          drawCharacter(ctx, c, pose, SIZE, SIZE * 2 - 4, SIZE * 1.5, { t, hopAt });
+          // 戴耳機那欄：耳機會超出頭頂，角色再畫小一點
+          if (pose === 'dj') drawCharacter(ctx, c, 'happy', SIZE, SIZE * 2 - 4, SIZE * 1.3, { t, hopAt }, true);
+          else drawCharacter(ctx, c, pose, SIZE, SIZE * 2 - 4, SIZE * 1.5, { t, hopAt });
         }
         raf = requestAnimationFrame(draw);
       };

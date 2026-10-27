@@ -237,6 +237,50 @@ export function riser(t: number, dur: number, peak = 0.16): void {
   src.stop(t + dur + 0.03);
 }
 
+/** 刷碟（Disc Jockey）：濾波噪音＋音高來回滑的「wicka-wicka」，dur 秒內來回 strokes 下（長刷） */
+export function scratch(t: number, dur: number, strokes = 6): void {
+  const d = dur / strokes;
+  for (let k = 0; k < strokes; k++) {
+    const s = t + k * d;
+    const fwd = k % 2 === 0; // 往前推音高往上、往回拉音高往下
+    const src = ac!.createBufferSource();
+    src.buffer = noise;
+    const f = ac!.createBiquadFilter();
+    f.type = 'bandpass';
+    f.Q.value = 6;
+    f.frequency.setValueAtTime(fwd ? 500 : 2600, s);
+    f.frequency.exponentialRampToValueAtTime(fwd ? 2600 : 500, s + d * 0.9);
+    const g = ac!.createGain();
+    g.gain.setValueAtTime(0.0001, s);
+    g.gain.linearRampToValueAtTime(0.5, s + d * 0.15);
+    g.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
+    src.connect(f).connect(g).connect(master!);
+    src.start(s);
+    src.stop(s + d);
+    const o = ac!.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(fwd ? 160 : 520, s);
+    o.frequency.exponentialRampToValueAtTime(fwd ? 520 : 160, s + d * 0.9);
+    const og = ac!.createGain();
+    og.gain.setValueAtTime(0.0001, s);
+    og.gain.linearRampToValueAtTime(0.05, s + d * 0.15);
+    og.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
+    o.connect(og).connect(master!);
+    o.start(s);
+    o.stop(s + d);
+  }
+}
+
+/** 壓低其他聲音 dur 秒（刷碟時讓刷碟聲突出），之後回到原本音量 */
+export function duck(t: number, dur: number, level = 0.35): void {
+  const g = master!.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(0.7 * level, t + 0.03);
+  g.setValueAtTime(0.7 * level, t + dur);
+  g.linearRampToValueAtTime(0.7, t + dur + 0.08);
+}
+
 /** 按鍵音：粉＝咚（低）、藍＝咔（高） */
 export function padSound(color: 'pink' | 'blue'): void {
   const t = audio().currentTime;

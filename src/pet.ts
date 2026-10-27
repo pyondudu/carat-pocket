@@ -107,6 +107,18 @@ export function applyRhythm(pet: PetState): void {
   pet.stats.mood = clamp(pet.stats.mood + GAME_MOOD);
 }
 
+/** 能不能玩 Disc Jockey；不能的話回傳原因 */
+export function djBlocked(pet: PetState): string | null {
+  if (pet.sleeping) return '噓…正在睡覺，起床再來打碟吧';
+  if (pet.stats.energy < GAME_ENERGY) return '太累了，先睡一下再來打碟吧';
+  return null;
+}
+
+export function applyDj(pet: PetState): void {
+  pet.stats.energy = clamp(pet.stats.energy - GAME_ENERGY);
+  pet.stats.mood = clamp(pet.stats.mood + GAME_MOOD);
+}
+
 /** 執行動作，回傳要顯示的訊息 */
 export function doAction(pet: PetState, action: Action): string {
   const s = pet.stats;

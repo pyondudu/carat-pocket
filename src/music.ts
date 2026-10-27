@@ -2,7 +2,7 @@
 // EDM 風格（2026-10-25 使用者覺得銅管老氣）：四拍大鼓、反拍低音、sidechain 和弦、Build-up 接 Drop
 
 import { clap, crash, hat, kick, lead, midi, openHat, pad, pluck, riser, snare, tone } from './audio';
-import type { Bar, Chord, DrumStyle } from './data/songs';
+import type { Bar, Chord, DrumStyle, LeadNote } from './data/songs';
 
 /** 鼓與低音的節奏型（16 格，x＝打）：kick 大鼓、clap 拍手、hat 腳踏鈸、open 開放鈸；bass 的 R＝根音 */
 const DRUMS: Record<DrumStyle, { kick: string; clap: string; hat: string; open: string; bass: string }> = {
@@ -78,4 +78,47 @@ export function playBar(bar: Bar, at: number, step: number): void {
   for (const [s, len] of bar.rolls) for (let k = 0; k < len; k++) snare(t(s + k), 0.12 + (k / len) * 0.25);
   // 過門：段落最後一小節的最後一拍，小鼓十六分音符漸強（有連打或結尾的段落不加）
   if (bar.last && !bar.rolls.length && style !== 'end') for (let s = 12; s < 16; s++) snare(t(s), 0.12 + (s - 12) * 0.06);
+}
+
+// ---- Disc Jockey：分層編曲，鼓／低音／旋律可以各自開關，和弦一直開著當底（使用者 2026-10-27 定案） ----
+
+export interface DjLayers {
+  drums: boolean;
+  bass: boolean;
+  lead: boolean;
+}
+
+export interface DjBar {
+  chord: Chord;
+  lead: LeadNote[];
+  first: boolean; // 曲子第一小節
+  last: boolean; // 最後一小節
+}
+
+/** 排一個小節：house 四拍大鼓、反拍低音、跟著大鼓吸的和弦 */
+export function playDjBar(bar: DjBar, at: number, step: number, on: DjLayers): void {
+  const t = (s: number) => at + s * step;
+  const beat = step * 4;
+  const notes = [...voicing(bar.chord), voicing(bar.chord)[0] + 12].map(midi);
+  // 和弦：一直開著；鼓沒開時不吸，聽起來比較平
+  pad(at, notes, step * 16, on.drums ? { pump: beat, from: 3200, peak: 0.018 } : { from: 1800, peak: 0.014 });
+  if (bar.last) {
+    crash(t(0), 0.2);
+    kick(t(0), 0.9);
+    tone(t(0), midi(bassNote(bar.chord)), step * 12, 'triangle', 0.3);
+    return;
+  }
+  for (let s = 0; s < 16; s++) {
+    if (on.drums) {
+      if (s % 4 === 0) kick(t(s), 0.9);
+      if (s === 4 || s === 12) {
+        clap(t(s), 0.3);
+        snare(t(s), 0.15);
+      }
+      if (s % 4 === 2) openHat(t(s), 0.06);
+      else hat(t(s), s % 2 ? 0.02 : 0.035);
+    }
+    if (on.bass && s % 4 === 2) tone(t(s), midi(bassNote(bar.chord)), step * 1.7, 'triangle', 0.32);
+  }
+  if (on.lead) for (const n of bar.lead) lead(t(n.step), midi(n.midi), n.len * step, true);
 }

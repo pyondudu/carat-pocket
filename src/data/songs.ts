@@ -178,7 +178,7 @@ export interface Chord {
   ext: '' | '7' | 'maj7' | '9' | 'add9';
 }
 
-function parseChord(s: string, transpose: number): Chord {
+export function parseChord(s: string, transpose = 0): Chord {
   const m = /^([A-G])([b#]?)(m?)(maj7|7|9|add9)?$/.exec(s);
   if (!m) throw new Error(`看不懂的和弦：${s}`);
   const root = (NAMES[m[1]] + (m[2] === 'b' ? -1 : m[2] === '#' ? 1 : 0) + transpose + 24) % 12;
@@ -186,7 +186,7 @@ function parseChord(s: string, transpose: number): Chord {
 }
 
 /** 音名 → MIDI 音高（C4＝60） */
-function parsePitch(s: string): number {
+export function parsePitch(s: string): number {
   const m = /^([A-G])([b#]?)(\d)$/.exec(s);
   if (!m) throw new Error(`看不懂的音：${s}`);
   return NAMES[m[1]] + (m[2] === 'b' ? -1 : m[2] === '#' ? 1 : 0) + (Number(m[3]) + 1) * 12;

@@ -218,6 +218,12 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .pad { font-size: 1.8rem; font-weight: 700; padding: 30px 0; touch-action: none; border-radius: 20px; }
 .pad.pink { background: #f9b6cb; }
 .pad.blue { background: #a9c6f0; }
+/* Disc Jockey：三顆音軌切換鍵（開著時亮起）＋一顆刷碟鍵 */
+.dj-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dj-key { font-size: 1.1rem; font-weight: 700; padding: 18px 0; touch-action: none; border-radius: 16px; background: #e4e0ee; color: #6a6488; }
+.dj-key.on { background: #b9f0d6; color: #1f5a40; box-shadow: 0 0 0 3px #6fd0a8 inset, 0 3px 0 #2b2b2b; }
+.dj-scratch { font-size: 1.4rem; font-weight: 700; padding: 20px 0; touch-action: none; border-radius: 20px; background: #ffb3d4; }
+.dj-scratch.off { background: #e4e0ee; color: #a8a2b8; }
 .rhythm-panel .shake-info { justify-content: center; color: var(--muted); font-size: 1.1rem; }
 .result-title { text-align: center; margin: 0; }
 .rhythm-result { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }

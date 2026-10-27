@@ -4,7 +4,7 @@ import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 7; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate
+const VERSION = 8; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate；8：加入 Disc Jockey 紀錄 dj
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
@@ -41,11 +41,13 @@ export interface GameState {
   guest: { id: string; until: number } | null;
   /** 節奏應援紀錄：key 是「曲子 id:難度」，best 最高分、plays 玩過幾次 */
   rhythm: Record<string, { best: number; plays: number }>;
+  /** Disc Jockey 紀錄：最高分、玩過幾次 */
+  dj: { best: number; plays: number };
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, dj: { best: 0, plays: 0 }, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -84,6 +86,10 @@ function load(): GameState {
       if (data.version === 6) {
         data.chocolate = 0;
         data.version = 7;
+      }
+      if (data.version === 7) {
+        data.dj = { best: 0, plays: 0 };
+        data.version = 8;
       }
       if (data.version === VERSION) return renameIds(data);
     }

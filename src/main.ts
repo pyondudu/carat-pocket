@@ -5,6 +5,7 @@ import { homeScene } from './scenes/home';
 import { introScene } from './scenes/intro';
 import { selectScene } from './scenes/select';
 import { rhythmScene } from './scenes/rhythm';
+import { djScene } from './scenes/dj';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
@@ -20,6 +21,7 @@ register('sheet', sheetScene);
 register('shake', shakeScene);
 register('shop', shopScene);
 register('rhythm', rhythmScene);
+register('dj', djScene);
 
 /** 補算離開期間的時間，離開夠久就顯示「你不在的時候…」 */
 function welcomeBack(): void {
@@ -38,6 +40,8 @@ loadSprites().then(() => {
   if (location.hash === '#sheet') return go('sheet');
   // #rhythm：應援預覽（還沒選本命也能看）
   if (location.hash === '#rhythm') return go('rhythm');
+  // #dj：Disc Jockey 預覽（製作中）
+  if (location.hash === '#dj') return go('dj');
   welcomeBack();
   go(state.mainId ? 'home' : 'intro');
 });

@@ -19,7 +19,7 @@ const INK = '#2b2b2b';
 const COUNTDOWN = 3; // 按開始後 3、2、1 倒數，倒數完第一拍
 const LANE_H = 15; // 軌道高度（房間格數）
 const JUDGE_X = 9; // 判定圈中心（房間格數）
-const WINDOWS = [
+export const WINDOWS = [
   { ms: 50, label: '完美', color: '#ffd84a' },
   { ms: 100, label: '很好', color: '#ffffff' },
   { ms: 150, label: '還行', color: '#cfe3ff' },
@@ -115,7 +115,7 @@ const BIG_DIGITS: Record<number, string[]> = {
 };
 
 /** 房間正中央的倒數圖示：佔房間一半大小的圓牌＋大數字，每秒換數字時彈一下（ctx 是房間格座標） */
-function drawCountdown(ctx: CanvasRenderingContext2D, n: number, p: number): void {
+export function drawCountdown(ctx: CanvasRenderingContext2D, n: number, p: number): void {
   const s = 1 + Math.max(0, 0.2 - p) * 1.2; // 剛換數字時大一點再縮回
   ctx.save();
   ctx.translate(ROOM / 2, ROOM / 2);

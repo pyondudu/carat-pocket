@@ -2,9 +2,10 @@
 
 import { CHARACTERS, getCharacter, type Character } from '../data/characters';
 import { FOOD_PRICE, SPECIAL_FOOD_PRICE } from '../data/shop';
+import { SPECIAL_HUNGER, SPECIAL_MOOD } from '../pet';
 import { characterCanvas } from '../draw';
 import { go, type Scene } from '../router';
-import { save, state } from '../state';
+import { FOOD_CAP, save, state } from '../state';
 import { foodIcon, h, modal, toast } from '../ui';
 
 export function shopScene(): Scene {
@@ -41,14 +42,15 @@ export function shopScene(): Scene {
         'section',
         { className: 'shop-section' },
         h('h2', { textContent: '食物' }),
-        item('🍙', '紫菜飯糰', '飽足 +30', FOOD_PRICE, owned.food, () => {
+        item('🍙', '紫菜包飯', '飽足 +30', FOOD_PRICE, owned.food, () => {
+          if (state.food >= FOOD_CAP) return toast(`紫菜包飯最多只能放 ${FOOD_CAP} 個`);
           if (!pay(FOOD_PRICE)) return;
           state.food++;
           save();
           refresh();
-          toast('買了 1 個紫菜飯糰');
+          toast('買了 1 個紫菜包飯');
         }),
-        item(main.specialIcon, main.specialFood, `${main.name} 最喜歡的！飽足 +40、心情 +30`, SPECIAL_FOOD_PRICE, owned.special, () => {
+        item(main.specialIcon, main.specialFood, `${main.name} 最喜歡的！飽足 +${SPECIAL_HUNGER}、心情 +${SPECIAL_MOOD}`, SPECIAL_FOOD_PRICE, owned.special, () => {
           if (!pay(SPECIAL_FOOD_PRICE)) return;
           state.specialFood++;
           save();

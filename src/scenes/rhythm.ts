@@ -1,6 +1,6 @@
 // 節奏應援：上方房間，本命拿克拉棒跳舞；中間音符軌道（太鼓式，由右往左流）；下方粉／藍兩顆按鈕
 // 流程（使用者 2026-10-26 定案）：進來先跳說明視窗 → 選難度 → 按開始 → 房間中央 3、2、1 倒數 → 一局約 30 秒 → 結算
-// 一局體力 −20、心情 +10，金幣依得分（src/rhythm.ts）；還沒選本命（#rhythm 預覽）時不給獎勵
+// 一局體力 −10、心情 +10（pet.ts 的 GAME_ENERGY、GAME_MOOD），金幣依得分（src/rhythm.ts）；還沒選本命（#rhythm 預覽）時不給獎勵
 
 import { CHARACTERS } from '../data/characters';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
@@ -9,7 +9,7 @@ import { audio, heardTime, padSound, tone } from '../audio';
 import { expandChart, LEVEL_LABEL, LEVEL_TRAVEL, LEVELS, songBars, SONGS, type Level } from '../data/songs';
 import { playBar } from '../music';
 import { go, type Scene } from '../router';
-import { applyRhythm, rhythmBlocked } from '../pet';
+import { applyRhythm, GAME_ENERGY, GAME_MOOD, rhythmBlocked } from '../pet';
 import { RANK_LABEL, scoreOf } from '../rhythm';
 import { mainPet, passTime, save, state } from '../state';
 import { h, modal } from '../ui';
@@ -306,7 +306,7 @@ export function rhythmScene(): Scene {
             row('最高連擊', best),
             row('連打', counts.連打),
           ),
-          ...(pet ? [h('p', { className: 'gain rhythm-gain', textContent: `+${r.coins} 🪙　體力 −20　心情 +10` })] : []),
+          ...(pet ? [h('p', { className: 'gain rhythm-gain', textContent: `+${r.coins} 🪙　體力 −${GAME_ENERGY}　心情 +${GAME_MOOD}` })] : []),
           h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '回房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('button', { className: 'primary', textContent: '再玩一次', onclick: pick })),
         );
       };
@@ -318,7 +318,7 @@ export function rhythmScene(): Scene {
           panel.replaceChildren(h('p', { className: 'hint', textContent: blocked }), h('button', { className: 'primary', textContent: '回房間', onclick: () => go('home') }));
           return;
         }
-        const startBtn = h('button', { className: 'primary', textContent: pet ? '開始！（體力 −20）' : '開始！', disabled: !level, onclick: () => start(level!) });
+        const startBtn = h('button', { className: 'primary', textContent: pet ? `開始！（體力 −${GAME_ENERGY}）` : '開始！', disabled: !level, onclick: () => start(level!) });
         const buttons = LEVELS.map((lv) => {
           const b = h('button', { className: `level ${lv}`, textContent: LEVEL_LABEL[lv] });
           b.onclick = () => {

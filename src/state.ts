@@ -4,9 +4,23 @@ import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
 
 const SAVE_KEY = 'carat-pocket-save';
-const VERSION = 5; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm
+const VERSION = 6; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
+
+/** 每天早上 9:00 發 3 個紫菜包飯；好幾天沒開也只發一次（使用者 2026-10-27 決定） */
+export const DAILY_FOOD = 3;
+const DAILY_HOUR = 9;
+/** 紫菜包飯最多放 30 個（每日發放和商店都算） */
+export const FOOD_CAP = 30;
+
+/** 最近一次已經過去的當地 9:00 */
+function lastDailyTime(now = Date.now()): number {
+  const d = new Date(now);
+  d.setHours(DAILY_HOUR, 0, 0, 0);
+  if (d.getTime() > now) d.setDate(d.getDate() - 1);
+  return d.getTime();
+}
 
 export interface GameState {
   version: number;
@@ -15,8 +29,8 @@ export interface GameState {
   pets: Record<string, PetState>; // 每個角色各自保存數值
   coins: number;
   food: number;
-  /** 自動補食物的累積進度（0～1 個）；舊存檔沒有這個欄位 */
-  foodProgress?: number;
+  /** 上一次發放紫菜包飯的時間（那天 9:00 的時間戳） */
+  dailyFoodAt: number;
   /** 飲料圖鑑：做過幾次、最好的品質（1～3） */
   codex: Record<string, { count: number; best: number }>;
   /** 持有的本命特殊食物數量 */
@@ -29,7 +43,7 @@ export interface GameState {
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, codex: {}, specialFood: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, guest: null, rhythm: {}, lastSeen: Date.now() };
 }
 
 export const state: GameState = load();
@@ -58,6 +72,12 @@ function load(): GameState {
       if (data.version === 4) {
         data.rhythm = {};
         data.version = 5;
+      }
+      if (data.version === 5) {
+        // 版本 6：拿掉每 4 小時補食物，改成每天 9:00 發放；從下一個 9:00 開始發
+        delete (data as { foodProgress?: number }).foodProgress;
+        data.dailyFoodAt = lastDailyTime();
+        data.version = 6;
       }
       if (data.version === VERSION) return renameIds(data);
     }
@@ -109,36 +129,33 @@ export function chooseMain(id: string): void {
   save();
 }
 
-/** 自動補食物：每 4 小時 1 個，最多存到 3 個（避免沒食物又沒體力搖飲料時卡住） */
-const FOOD_REGEN_HOURS = 4;
-const FOOD_REGEN_CAP = 3;
 
 /** 作客停留多久 */
 export const GUEST_HOURS = 2;
 
-/** 經過 ms 毫秒：主角數值衰減＋自動補食物 */
-export function passTime(ms: number): void {
+/** 經過 ms 毫秒：主角數值衰減＋每日發放紫菜包飯；回傳這次發了幾個 */
+export function passTime(ms: number): number {
   const pet = mainPet();
   if (pet) applyElapsed(pet, ms);
-  if (state.food >= FOOD_REGEN_CAP) {
-    state.foodProgress = 0;
-    return;
-  }
-  const total = (state.foodProgress ?? 0) + ms / 3_600_000 / FOOD_REGEN_HOURS;
-  const gained = Math.floor(total);
-  state.food = Math.min(FOOD_REGEN_CAP, state.food + gained);
-  state.foodProgress = total - gained;
+  const due = lastDailyTime();
+  if (state.dailyFoodAt >= due) return 0;
+  state.dailyFoodAt = due;
+  const before = state.food;
+  state.food = Math.min(FOOD_CAP, state.food + DAILY_FOOD);
+  return state.food - before;
 }
 
+export const dailyFoodMessage = (n: number) => `早安！今天的 ${n} 個紫菜包飯送到了`;
+
 /** 把經過的時間套用到主角，回傳 [經過毫秒, 套用前數值] */
-export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; guestLeft: string | null } | null {
+export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; guestLeft: string | null; dailyFood: number } | null {
   const pet = mainPet();
   if (!pet) return null;
   const elapsed = Math.max(0, now - state.lastSeen);
   const before = { ...pet.stats };
-  passTime(elapsed);
+  const dailyFood = passTime(elapsed);
   state.lastSeen = now;
-  return { elapsed, before, guestLeft: sendGuestHome(now) };
+  return { elapsed, before, guestLeft: sendGuestHome(now), dailyFood };
 }
 
 /** 客人時間到了就回家，回傳回家的是誰 */

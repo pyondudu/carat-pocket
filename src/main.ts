@@ -9,7 +9,7 @@ import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
 import { setupPwa } from './update';
-import { awayMessage, catchUp, mainPet, save, state } from './state';
+import { awayMessage, catchUp, dailyFoodMessage, mainPet, save, state } from './state';
 import { getCharacter } from './data/characters';
 import { h, modal, toast } from './ui';
 
@@ -30,6 +30,7 @@ function welcomeBack(): void {
   const msg = awayMessage(result.elapsed, result.before, pet.stats, result.guestLeft);
   if (msg) modal(h('h2', { textContent: '你不在的時候…' }), h('p', { className: 'away', textContent: msg }));
   else if (result.guestLeft) toast(`${getCharacter(result.guestLeft).name} 回家了，下次再來玩～`);
+  if (result.dailyFood) toast(dailyFoodMessage(result.dailyFood));
 }
 
 loadSprites().then(() => {

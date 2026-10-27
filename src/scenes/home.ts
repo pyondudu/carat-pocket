@@ -3,9 +3,9 @@
 import { CHARACTERS, getCharacter, type Character } from '../data/characters';
 import { INVITE_PRICE } from '../data/shop';
 import { characterCanvas, contentBox, drawCharacter, hasRig, hasSprite, isHopping, type Motion } from '../draw';
-import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, STAT_LABELS, type Action, type PetStats } from '../pet';
+import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf, SPECIAL_HUNGER, SPECIAL_MOOD, STAT_LABELS, type Action, type PetStats } from '../pet';
 import { go, type Scene } from '../router';
-import { GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
+import { DAILY_FOOD, dailyFoodMessage, GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
 import { foodIcon, h, modal, toast } from '../ui';
 import { howToPlay } from './intro';
 
@@ -18,6 +18,7 @@ export function homeScene(): Scene {
   let timer = 0;
   let hopAt: number | undefined; // 最近一次互動的時間，角色會跳一下
   let guestHopAt: number | undefined; // 點客人時客人跳一下
+  let sweepAt: number | undefined; // 按清潔後掃把開始掃的時間
 
   return {
     mount(root) {
@@ -57,7 +58,8 @@ export function homeScene(): Scene {
 
       // 依存檔的 lastSeen 補算到現在，和回到 App 時的補算共用同一個起點，不會重複扣
       const tick = () => {
-        passTime(Date.now() - state.lastSeen);
+        const daily = passTime(Date.now() - state.lastSeen);
+        if (daily) toast(dailyFoodMessage(daily));
         const left = sendGuestHome();
         if (left) toast(`${getCharacter(left).name} 回家了，下次再來玩～`);
         save();
@@ -71,11 +73,11 @@ export function homeScene(): Scene {
         refresh();
       };
 
-      // 餵食選單：一般食物（紫菜飯糰）或本命的特殊食物
+      // 餵食選單：一般食物（紫菜包飯）或本命的特殊食物
       const feedMenu = () => {
         tick();
         if (pet.sleeping) return toast('噓…正在睡覺');
-        if (state.food <= 0 && state.specialFood <= 0) return toast('沒有食物了，去商店買吧（每 4 小時也會自動補 1 個）');
+        if (state.food <= 0 && state.specialFood <= 0) return toast(`沒有食物了，去商店買吧\n（每天早上 9:00 會發 ${DAILY_FOOD} 個）`);
         const option = (icon: string, label: string, count: number, note: string, eat: () => string) => {
           const b = h('button', { className: 'feed-option', disabled: count <= 0 }, h('strong', {}, foodIcon(icon), ` ${label} ×${count}`), h('small', { textContent: note }));
           b.onclick = () => {
@@ -92,11 +94,11 @@ export function homeScene(): Scene {
           h(
             'div',
             { className: 'feed-options' },
-            option('🍙', '紫菜飯糰', state.food, '飽足 +30', () => {
+            option('🍙', '紫菜包飯', state.food, '飽足 +30', () => {
               state.food--;
               return doAction(pet, 'feed');
             }),
-            option(char.specialIcon, char.specialFood, state.specialFood, '飽足 +40、心情 +30', () => {
+            option(char.specialIcon, char.specialFood, state.specialFood, `飽足 +${SPECIAL_HUNGER}、心情 +${SPECIAL_MOOD}`, () => {
               state.specialFood--;
               feedSpecial(pet);
               return `${char.specialFood}！最喜歡了！`;
@@ -174,13 +176,25 @@ export function homeScene(): Scene {
           refresh();
         },
       });
+      // 清潔：地上有垃圾才要掃，掃把掃過去垃圾才消失，掃完清潔回滿
+      const sweep = () => {
+        if (sweepAt !== undefined) return;
+        tick();
+        if (pet.sleeping) return toast('噓…正在睡覺');
+        if (pet.stats.clean >= TRASH_FROM) return toast('很乾淨，不需要清潔喔');
+        sweepAt = performance.now();
+        window.setTimeout(() => {
+          sweepAt = undefined;
+          act('clean');
+        }, SWEEP_MS);
+      };
       const actions = h(
         'div',
         { className: 'actions' },
         h('button', { textContent: '🍙 餵食', onclick: feedMenu }),
-        h('button', { textContent: '🎾 玩耍', onclick: () => act('play') }),
-        h('button', { textContent: '🫧 清潔', onclick: () => act('clean') }),
+        h('button', { textContent: '🫧 清潔', onclick: sweep }),
         sleepBtn,
+        h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
       );
       const soon = () => toast('敬請期待～');
       // 網址加 ?debug（或 #debug）才出現：把 lastSeen 往前推，模擬離開幾小時
@@ -189,6 +203,7 @@ export function homeScene(): Scene {
         const skip = (hours: number) => () => {
           state.lastSeen -= hours * 3_600_000;
           if (state.guest) state.guest.until -= hours * 3_600_000;
+          state.dailyFoodAt -= hours * 3_600_000;
           tick();
           refresh();
           toast(`快轉 ${hours} 小時`);
@@ -253,12 +268,12 @@ export function homeScene(): Scene {
       const nav = h(
         'nav',
         { className: 'nav' },
-        // 順序：手搖飲、節奏應援、待推出、商店（使用者 2026-10-26 指定商店放最右邊）
+        // 順序：手搖飲、節奏應援、待推出、待推出（使用者 2026-10-27 把商店移到上排、拿掉玩耍）
         h('button', { textContent: '🥤 手搖飲', onclick: () => go('shake') }),
         h('button', { textContent: '🎵 節奏應援', onclick: () => go('rhythm') }),
-        // 原本是「相簿」（里程碑 2），要做什麼之後再決定，先顯示待推出
+        // 第一格原本是「相簿」（里程碑 2），要做什麼之後再決定
         h('button', { className: 'soon', textContent: '待推出', onclick: soon }),
-        h('button', { textContent: '🛍️ 商店', onclick: () => go('shop') }),
+        h('button', { className: 'soon', textContent: '待推出', onclick: soon }),
       );
 
       root.append(
@@ -287,7 +302,8 @@ export function homeScene(): Scene {
       const draw = (t: number) => {
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
         drawRoom(ctx);
-        drawTrash(ctx, pet.stats.clean);
+        const broomX = sweepAt === undefined ? undefined : sweepX((t - sweepAt) / SWEEP_MS);
+        drawTrash(ctx, pet.stats.clean, broomX);
         const motion: Motion = { t, hopAt };
         // 跳起來的時候（互動的反應）一律開心
         const mood = isHopping(motion) ? 'happy' : moodOf(pet);
@@ -312,6 +328,11 @@ export function homeScene(): Scene {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
         } else {
           drawCharacter(ctx, char, mood, (ROOM * ZOOM) / 2, bottom - bounce * ZOOM, sprite ? 168 : 128, motion);
+        }
+        if (broomX !== undefined) {
+          ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
+          drawBroom(ctx, broomX, t);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
         raf = requestAnimationFrame(draw);
 
@@ -488,9 +509,14 @@ const TRASH: [number, number, keyof typeof TRASH_ART, number][] = [
   [52, 58, 'peel', 15],
 ];
 
-function drawTrash(ctx: CanvasRenderingContext2D, clean: number): void {
+/** 清潔低於多少地上才有垃圾 */
+const TRASH_FROM = Math.max(...TRASH.map((t) => t[3]));
+
+/** sweptX：掃把掃到哪裡（房間格），垃圾中心在它左邊的已經掃掉 */
+function drawTrash(ctx: CanvasRenderingContext2D, clean: number, sweptX = -Infinity): void {
   for (const [x, y, kind, below] of TRASH) {
     if (clean >= below) continue;
+    if (x + TRASH_ART[kind][0].length / 2 < sweptX) continue;
     TRASH_ART[kind].forEach((row, dy) =>
       [...row].forEach((ch, dx) => {
         if (ch === '.') return;
@@ -499,6 +525,44 @@ function drawTrash(ctx: CanvasRenderingContext2D, clean: number): void {
       }),
     );
   }
+}
+
+// 清潔的掃把：由左往右掃過地板，一邊左右刷
+const SWEEP_MS = 1500;
+const BROOM_ART = [
+  '......h',
+  '.....h.',
+  '.....h.',
+  '....h..',
+  '....h..',
+  '...h...',
+  '...h...',
+  '.rrrrr.',
+  'yyyyyyy',
+  'yYyYyYy',
+  'YyYyYyY',
+  'yYyYyYy',
+];
+const BROOM_COLORS: Record<string, string> = { h: '#8a5a2b', r: '#e5534b', y: '#f2cf63', Y: '#c99a35' };
+
+/** 掃地進度 0～1 → 掃把（刷毛中心）在第幾格 */
+const sweepX = (p: number) => -4 + Math.min(1, p) * (ROOM + 8);
+
+function drawBroom(ctx: CanvasRenderingContext2D, x: number, t: number): void {
+  const left = Math.round(x + Math.sin(t / 70) * 2) - 3;
+  const top = ROOM - 3 - BROOM_ART.length;
+  BROOM_ART.forEach((row, dy) =>
+    [...row].forEach((ch, dx) => {
+      if (ch === '.') return;
+      ctx.fillStyle = BROOM_COLORS[ch];
+      ctx.fillRect(left + dx, top + dy, 1, 1);
+    }),
+  );
+  // 揚起的灰塵
+  ctx.fillStyle = '#c9c2b6';
+  const f = Math.floor(t / 120) % 2;
+  ctx.fillRect(left - 2 - f, ROOM - 5 + f, 1, 1);
+  ctx.fillRect(left - 4 + f, ROOM - 7 - f, 1, 1);
 }
 
 // 音符像素圖（八分音符），一個字一格

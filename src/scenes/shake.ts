@@ -4,7 +4,7 @@ import { getCharacter } from '../data/characters';
 import { DRINKS, getIngredient, MYSTERY, type Drink } from '../data/drinks';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
 import { drawDrink, drawShakeLines, drawShaker, drinkCanvas } from '../drinkart';
-import { applyShake, shakeBlocked } from '../pet';
+import { applyShake, GAME_ENERGY, shakeBlocked } from '../pet';
 import { go, type Scene } from '../router';
 import {
   availableIngredients, coinsFor, makeDrink, MAX_PICK, MIN_PICK, QUALITY_LABELS, qualityOf, SHAKE_SECONDS, type Quality,
@@ -129,7 +129,7 @@ export function shakeScene(): Scene {
           panel.replaceChildren(h('p', { className: 'hint', textContent: blocked }), h('button', { className: 'primary', textContent: '回房間', onclick: () => go('home') }));
           return;
         }
-        const start = h('button', { className: 'primary', textContent: '開始搖！（體力 −10）', onclick: () => startShake() });
+        const start = h('button', { className: 'primary', textContent: `開始搖！（體力 −${GAME_ENERGY}）`, onclick: () => startShake() });
         const count = h('span');
         const update = () => {
           start.disabled = picked.length < MIN_PICK;

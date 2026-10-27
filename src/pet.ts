@@ -51,52 +51,53 @@ export function moodOf(pet: PetState): Mood {
   return 'happy';
 }
 
-export type Action = 'feed' | 'play' | 'clean' | 'sleep';
+export type Action = 'feed' | 'clean' | 'sleep';
 
-/** 本命特殊食物：飽足 +40、心情 +30 */
+/** 本命特殊食物：飽足 +50、心情 +30（使用者 2026-10-27 從 +40 調高） */
+export const SPECIAL_HUNGER = 50;
+export const SPECIAL_MOOD = 30;
+
 export function feedSpecial(pet: PetState): void {
-  pet.stats.hunger = clamp(pet.stats.hunger + 40);
-  pet.stats.mood = clamp(pet.stats.mood + 30);
+  pet.stats.hunger = clamp(pet.stats.hunger + SPECIAL_HUNGER);
+  pet.stats.mood = clamp(pet.stats.mood + SPECIAL_MOOD);
 }
 
-const SHAKE_ENERGY = 10;
+/** 小遊戲（手搖飲、節奏應援）一律體力 −10、心情 +10（使用者 2026-10-27 決定） */
+export const GAME_ENERGY = 10;
+export const GAME_MOOD = 10;
 
 /** 能不能搖飲料；不能的話回傳原因 */
 export function shakeBlocked(pet: PetState): string | null {
   if (pet.sleeping) return '噓…正在睡覺，起床再來搖吧';
-  if (pet.stats.energy < SHAKE_ENERGY) return '太累了，先睡一下再來搖吧';
+  if (pet.stats.energy < GAME_ENERGY) return '太累了，先睡一下再來搖吧';
   return null;
 }
 
-/** 邀請朋友來玩：心情 +20、體力 −15（使用者 2026-10-24 決定：朋友來很開心，但陪玩會累） */
+/** 邀請朋友來玩：心情 +20、體力 −10（使用者 2026-10-24 決定：朋友來很開心，但陪玩會累；2026-10-27 體力從 −15 改 −10） */
 export const INVITE_MOOD = 20;
-export const INVITE_ENERGY = 15;
+export const INVITE_ENERGY = 10;
 
 export function applyInvite(pet: PetState): void {
   pet.stats.mood = clamp(pet.stats.mood + INVITE_MOOD);
   pet.stats.energy = clamp(pet.stats.energy - INVITE_ENERGY);
 }
 
-/** 搖完一杯：體力 −10、心情 +5 */
+/** 搖完一杯 */
 export function applyShake(pet: PetState): void {
-  pet.stats.energy = clamp(pet.stats.energy - SHAKE_ENERGY);
-  pet.stats.mood = clamp(pet.stats.mood + 5);
+  pet.stats.energy = clamp(pet.stats.energy - GAME_ENERGY);
+  pet.stats.mood = clamp(pet.stats.mood + GAME_MOOD);
 }
-
-/** 節奏應援：比手搖飲累但更開心，體力 −20、心情 +10（使用者 2026-10-26 決定） */
-export const RHYTHM_ENERGY = 20;
-export const RHYTHM_MOOD = 10;
 
 /** 能不能玩節奏應援；不能的話回傳原因 */
 export function rhythmBlocked(pet: PetState): string | null {
   if (pet.sleeping) return '噓…正在睡覺，起床再來應援吧';
-  if (pet.stats.energy < RHYTHM_ENERGY) return '太累了，先睡一下再來應援吧';
+  if (pet.stats.energy < GAME_ENERGY) return '太累了，先睡一下再來應援吧';
   return null;
 }
 
 export function applyRhythm(pet: PetState): void {
-  pet.stats.energy = clamp(pet.stats.energy - RHYTHM_ENERGY);
-  pet.stats.mood = clamp(pet.stats.mood + RHYTHM_MOOD);
+  pet.stats.energy = clamp(pet.stats.energy - GAME_ENERGY);
+  pet.stats.mood = clamp(pet.stats.mood + GAME_MOOD);
 }
 
 /** 執行動作，回傳要顯示的訊息 */
@@ -107,12 +108,6 @@ export function doAction(pet: PetState, action: Action): string {
     case 'feed':
       s.hunger = clamp(s.hunger + 30);
       return '好好吃！';
-    case 'play':
-      if (s.energy < 10) return '太累了，玩不動…';
-      s.mood = clamp(s.mood + 25);
-      s.energy = clamp(s.energy - 10);
-      s.hunger = clamp(s.hunger - 5);
-      return '好開心！';
     case 'clean':
       s.clean = 100;
       return '洗得香香的～';

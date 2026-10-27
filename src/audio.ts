@@ -3,6 +3,8 @@
 
 let ac: AudioContext | null = null;
 let master: GainNode | null = null;
+/** 不經過 master 的輸出（刷碟聲）：duck 壓低 master 時它不會跟著變小 */
+let fxBus: GainNode | null = null;
 let noise: AudioBuffer | null = null;
 let echo: GainNode | null = null; // 主旋律的回音（送到延遲線）
 
@@ -19,6 +21,9 @@ export function audio(): AudioContext {
     comp.attack.value = 0.003;
     comp.release.value = 0.15;
     master.connect(comp).connect(ac.destination);
+    fxBus = ac.createGain();
+    fxBus.gain.value = 0.7;
+    fxBus.connect(comp);
     noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
     const d = noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -298,9 +303,9 @@ export function scratch(t: number, dur: number, strokes = 6): void {
     f.frequency.exponentialRampToValueAtTime(fwd ? 2600 : 500, s + d * 0.9);
     const g = ac!.createGain();
     g.gain.setValueAtTime(0.0001, s);
-    g.gain.linearRampToValueAtTime(0.5, s + d * 0.15);
+    g.gain.linearRampToValueAtTime(0.9, s + d * 0.15);
     g.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
-    src.connect(f).connect(g).connect(master!);
+    src.connect(f).connect(g).connect(fxBus!);
     src.start(s);
     src.stop(s + d);
     const o = ac!.createOscillator();
@@ -309,9 +314,9 @@ export function scratch(t: number, dur: number, strokes = 6): void {
     o.frequency.exponentialRampToValueAtTime(fwd ? 520 : 160, s + d * 0.9);
     const og = ac!.createGain();
     og.gain.setValueAtTime(0.0001, s);
-    og.gain.linearRampToValueAtTime(0.05, s + d * 0.15);
+    og.gain.linearRampToValueAtTime(0.12, s + d * 0.15);
     og.gain.exponentialRampToValueAtTime(0.0001, s + d * 0.95);
-    o.connect(og).connect(master!);
+    o.connect(og).connect(fxBus!);
     o.start(s);
     o.stop(s + d);
   }

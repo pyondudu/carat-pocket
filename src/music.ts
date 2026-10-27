@@ -89,26 +89,29 @@ export interface DjLayers {
 }
 
 export interface DjBar {
-  chord: Chord;
+  chords: [Chord, Chord]; // 前半、後半小節
   lead: LeadNote[];
-  first: boolean; // 曲子第一小節
+  build: boolean; // Build-up 第一小節：riser 一直開著（不屬於任何一軌）
+  buildBars: number;
   last: boolean; // 最後一小節
 }
 
 /** 排一拍（beat＝這小節第幾拍 0～3，at＝這一拍開始的時間）：house 四拍大鼓、反拍低音、跟著大鼓吸的和弦
- *  一拍一拍排，Disc Jockey 的開關下一拍就生效；和弦一整個小節一起排（每拍重排會一直重新起音） */
+ *  一拍一拍排，Disc Jockey 的開關下一拍就生效；和弦半小節一起排（每拍重排會一直重新起音） */
 export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, on: DjLayers): void {
   const t = (s: number) => at + (s - beat * 4) * step;
-  if (beat === 0) {
-    const notes = [...voicing(bar.chord), voicing(bar.chord)[0] + 12].map(midi);
+  const chord = bar.chords[beat < 2 ? 0 : 1];
+  if (bar.build && beat === 0) riser(at, bar.buildBars * 16 * step);
+  if (beat % 2 === 0) {
+    const notes = [...voicing(chord), voicing(chord)[0] + 12].map(midi);
     // 和弦：一直開著當底，小聲一點，開關三軌的差別才聽得出來（使用者 2026-10-27 反映疊音軌聽不出混音感）；鼓沒開時不吸
-    pad(at, notes, step * 16, on.drums ? { pump: step * 4, from: 2600, peak: 0.011 } : { from: 1600, peak: 0.009 });
+    pad(at, notes, step * 8, on.drums ? { pump: step * 4, from: 2600, peak: 0.011 } : { from: 1600, peak: 0.009 });
   }
   if (bar.last) {
     if (beat > 0) return;
     crash(at, 0.25);
     kick(at, 1);
-    bassSynth(at, midi(bassNote(bar.chord)), step * 8, 0.14);
+    bassSynth(at, midi(bassNote(chord)), step * 8, 0.14);
     return;
   }
   for (let s = beat * 4; s < beat * 4 + 4; s++) {
@@ -122,7 +125,7 @@ export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, o
       else hat(t(s), s % 2 ? 0.05 : 0.08);
     }
     // 低音：反拍＋後面一個 16 分音符的滾動低音（house 常見）
-    if (on.bass && s % 4 >= 2) bassSynth(t(s), midi(bassNote(bar.chord)), step * (s % 4 === 2 ? 0.9 : 0.7), s % 4 === 2 ? 0.14 : 0.1);
+    if (on.bass && s % 4 >= 2) bassSynth(t(s), midi(bassNote(chord)), step * (s % 4 === 2 ? 0.9 : 0.7), s % 4 === 2 ? 0.14 : 0.1);
   }
   if (on.lead) for (const n of bar.lead) if (Math.floor(n.step / 4) === beat) lead(t(n.step), midi(n.midi), n.len * step, true, 1.8);
 }

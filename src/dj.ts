@@ -13,18 +13,19 @@ export interface Order {
 /** 前 2 小節是前奏（只有和弦，不算分），之後每小節換一張（使用者 2026-10-27：原本 2 小節一張，撥好後等太久）；
  *  跟著克拉派對的段落：Drop A 2～7、Build-up 8～9、Drop B 10～14、第 15 小節收尾不算 */
 export const ORDERS: Order[] = [
+  // 每次只換一個音軌（使用者 2026-10-27 覺得有點趕，一次撥好幾顆最容易手忙腳亂）
   { from: 2, mix: 'd' },
   { from: 3, mix: 'db' },
   { from: 4, mix: 'dbl' },
   { from: 5, mix: 'bl' },
   { from: 6, mix: 'l' },
   { from: 7, mix: 'dl' },
-  { from: 8, mix: 'b' },
-  { from: 9, mix: 'd' },
+  { from: 8, mix: 'd' },
+  { from: 9, mix: 'db' },
   { from: 10, mix: 'dbl' },
-  { from: 11, mix: 'db' },
-  { from: 12, mix: 'l' },
-  { from: 13, mix: 'bl' },
+  { from: 11, mix: 'bl' },
+  { from: 12, mix: 'b' },
+  { from: 13, mix: 'db' },
   { from: 14, mix: 'dbl' },
 ];
 

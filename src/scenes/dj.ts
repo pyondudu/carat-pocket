@@ -28,6 +28,8 @@ export interface ClubState {
   beat: number;
   layers: number;
   scratch: number | null;
+  /** 刷碟點單快到了：離按下的時間還剩幾小節（0～1），沒有是 null */
+  cue: number | null;
   /** 點單圖示：want＝要開的音軌（null＝還沒開始，全暗）、match＝開關跟點單一樣（null＝不顯示燈）、left＝倒數條 0～1、hurry＝最後半小節 */
   order: { want: DjLayers | null; match: Record<keyof DjLayers, boolean> | null; left: number; hurry: boolean };
 }
@@ -201,6 +203,7 @@ export function drawBooth(ctx: CanvasRenderingContext2D, s: ClubState): void {
   px(ctx, 2, top, ROOM - 4, 3, '#3a3555');
   px(ctx, 2, top, ROOM - 4, 1, '#5a5380');
   turntable(ctx, 13, top - 1, rock, PINK);
+  if (s.cue !== null) drawCue(ctx, s.cue, s.beat);
   turntable(ctx, 51, top - 1, spin + 1, BLUE);
   // 混音器：中間小盒子，推桿和燈
   px(ctx, 25, top - 3, 14, 4, '#2c2843');
@@ -244,6 +247,35 @@ function drawOrder(ctx: CanvasRenderingContext2D, s: ClubState): void {
   const w = Math.round(52 * Math.max(0, Math.min(1, left)));
   px(ctx, 6, ROOM - 2, 52, 1, '#2a2248');
   if (!hurry || Math.floor(s.beat * 2) % 2 === 0) px(ctx, 6, ROOM - 2, w, 1, hurry ? NEON_PINK : '#e8e6f2');
+}
+
+/** 刷碟提示（使用者 2026-10-27 反映常常沒看到刷碟亮了）：左邊唱盤外面一圈粉紅色往內縮，縮到唱盤時按；旁邊閃「刷碟！」 */
+function drawCue(ctx: CanvasRenderingContext2D, d: number, beat: number): void {
+  const cx = 13;
+  const cy = BOOTH_TOP - 1;
+  ctx.save();
+  ctx.strokeStyle = NEON_PINK;
+  ctx.lineWidth = 1.2;
+  ctx.globalAlpha = 0.9;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 7.5 + d * 10, 4 + d * 5.5, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  // 目標圈：唱盤邊緣的白框
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 7.5, 4, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  if (Math.floor(beat * 4) % 2 === 0) {
+    ctx.font = 'bold 6px "Noto Sans TC", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = INK;
+    ctx.strokeText('刷碟！', cx, cy - 9);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('刷碟！', cx, cy - 9);
+  }
+  ctx.restore();
 }
 
 /** 刷碟時的像素字「Zzzik!」＋動作線（畫在左邊唱盤上方，房間格座標） */
@@ -538,7 +570,9 @@ export function djScene(): Scene {
         const layersNow = nowBeat >= 0 && played[nowBeat] ? LAYERS.filter((k) => played[nowBeat][k]).length : 0;
         const sp = scratchAt === null ? null : (now - scratchAt) / (SCRATCH_STEPS * STEP * 1000);
         const scratchP = sp !== null && sp < 1 ? sp : null;
-        const s: ClubState = { beat, layers: playing ? layersNow : 0, scratch: scratchP, order: orderState(st) };
+        const cueI = playing && scratchP === null ? SCRATCHES.findIndex((x, n) => !scratchDone[n] && x * STEP - st < BAR && st - x * STEP < WINDOWS[2].ms / 1000) : -1;
+        const cue = cueI >= 0 ? Math.max(0, (SCRATCHES[cueI] * STEP - st) / BAR) : null;
+        const s: ClubState = { beat, layers: playing ? layersNow : 0, scratch: scratchP, cue, order: orderState(st) };
         ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
         drawClub(ctx, s);
         ctx.setTransform(1, 0, 0, 1, 0, 0);

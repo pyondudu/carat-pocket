@@ -28,7 +28,7 @@ export interface ClubState {
   beat: number;
   layers: number;
   scratch: number | null;
-  /** 點單圖示：want＝要開的音軌（null＝還沒開始，全暗）、match＝開關跟點單一樣（null＝不顯示燈）、left＝倒數條 0～1、hurry＝倒數最後一小節 */
+  /** 點單圖示：want＝要開的音軌（null＝還沒開始，全暗）、match＝開關跟點單一樣（null＝不顯示燈）、left＝倒數條 0～1、hurry＝最後半小節 */
   order: { want: DjLayers | null; match: Record<keyof DjLayers, boolean> | null; left: number; hurry: boolean };
 }
 
@@ -240,7 +240,7 @@ function drawOrder(ctx: CanvasRenderingContext2D, s: ClubState): void {
       px(ctx, x + 13, y + 1, 2, 2, match[k] ? '#6fe0a8' : '#ff5a5a');
     }
   });
-  // 倒數條：從滿慢慢縮短，最後一小節變粉紅色閃
+  // 倒數條：從滿慢慢縮短，最後半小節變粉紅色閃
   const w = Math.round(52 * Math.max(0, Math.min(1, left)));
   px(ctx, 6, ROOM - 2, 52, 1, '#2a2248');
   if (!hurry || Math.floor(s.beat * 2) % 2 === 0) px(ctx, 6, ROOM - 2, w, 1, hurry ? NEON_PINK : '#e8e6f2');
@@ -501,7 +501,7 @@ export function djScene(): Scene {
         const end = ORDERS[idx + 1]?.from ?? DJ_BARS - 1;
         const want = wanted(shown.mix);
         const match = cur ? (Object.fromEntries(LAYERS.map((k) => [k, next[k] === want[k]])) as Record<keyof DjLayers, boolean>) : null;
-        return { want, match, left: (end * BAR - st) / ((end - from) * BAR), hurry: end * BAR - st < BAR };
+        return { want, match, left: (end * BAR - st) / ((end - from) * BAR), hurry: end * BAR - st < BAR / 2 };
       };
 
       const draw = (now: number) => {

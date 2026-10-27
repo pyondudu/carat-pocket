@@ -1,4 +1,4 @@
-// 應援用的電子音樂合成器（Web Audio），不用音樂檔；所有聲音都排在 AudioContext 的時間上，跟音符共用同一個時鐘
+// 應援用的電子音樂合成器（Web Audio）＋音檔播放（2026-10-27 起正式曲是音檔）；所有聲音都排在 AudioContext 的時間上，跟音符共用同一個時鐘
 // 2026-10-25 從銅管＋方波（使用者覺得老氣）改成 EDM：supersaw、pluck、sidechain 和弦、riser
 
 let ac: AudioContext | null = null;
@@ -34,6 +34,49 @@ export function audio(): AudioContext {
   }
   if (ac.state === 'suspended') void ac.resume();
   return ac;
+}
+
+const tracks = new Map<string, Promise<AudioBuffer>>();
+
+/** 下載並解碼音檔（同一個檔案只抓一次）；還沒按按鈕前也可以先解碼 */
+export function loadTrack(url: string): Promise<AudioBuffer> {
+  let p = tracks.get(url);
+  if (!p) {
+    p = fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error(`音檔下載失敗：${r.status}`);
+        return r.arrayBuffer();
+      })
+      .then((buf) => audio().decodeAudioData(buf));
+    p.catch(() => tracks.delete(url)); // 失敗的話下次重抓
+    tracks.set(url, p);
+  }
+  return p;
+}
+
+/** 在音訊時間 at 播放音檔：從檔案的 offset 秒開始、播 dur 秒，最後 0.5 秒淡出；回傳停止的函式
+ *  成品音樂直接接到輸出，不經過合成器用的壓縮器 */
+export function playTrack(buf: AudioBuffer, at: number, offset: number, dur: number): () => void {
+  const c = audio();
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const g = c.createGain();
+  g.gain.value = 0.9;
+  const fade = 0.5;
+  g.gain.setValueAtTime(0.9, at + dur - fade);
+  g.gain.linearRampToValueAtTime(0.0001, at + dur);
+  src.connect(g).connect(c.destination);
+  // 第一拍之前還有一點聲音（offset 秒）就一起播，所以提早 offset 秒開始
+  const start = at - offset;
+  if (start >= c.currentTime) src.start(start, 0, dur + offset);
+  else src.start(c.currentTime, c.currentTime - start, dur + offset - (c.currentTime - start));
+  return () => {
+    try {
+      src.stop();
+    } catch {
+      // 已經停了
+    }
+  };
 }
 
 /** 現在的音訊時間（秒），扣掉輸出延遲，讓畫面對到耳朵聽到的時間 */

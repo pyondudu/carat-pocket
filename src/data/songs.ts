@@ -1,4 +1,5 @@
 // 應援的曲子：純資料＋把資料展開成音符的函式（不碰畫面、不碰聲音），之後手錶版照這份轉成 C 陣列
+// 2026-10-27 起正式曲改用音檔〈To Be Free〉（Nck），程式合成的「克拉派對」留著當音檔載入失敗時的備用
 // 曲子是原創的。2026-10-25 經過幾版：銅管＋方波（使用者覺得老氣）→ 編曲改 EDM → 旋律也嫌老氣，使用者說不用再參考〈Very Nice〉樂譜，
 // 改照現在 EDM／K-pop 的寫法：小調、四和弦循環加 7／9 度、旋律只用小調五聲音階、副歌是「人聲切片」風格的短音切分＋八度跳躍
 
@@ -12,8 +13,17 @@ export const LEVEL_TRAVEL: Record<Level, number> = { easy: 2, normal: 1.8, hard:
 
 export type DrumStyle = 'intro' | 'verse' | 'build' | 'chorus' | 'chant' | 'end';
 
-export interface Section {
+/** 譜面段落：音檔曲子只需要這些 */
+export interface ChartSection {
   bars: number;
+  /** 連打：[段落內第幾小節, 第幾格, 長幾格]，三種難度共用 */
+  rolls?: [number, number, number][];
+  /** 譜面：每小節 16 格，p＝粉、b＝藍、.＝空，小節用 | 分隔，不夠就重複 */
+  chart: Record<Level, string>;
+}
+
+/** 程式合成曲子的段落：多了和弦、旋律、鼓 */
+export interface Section extends ChartSection {
   /** 每小節一個和弦，空白分隔；「Bb/C」＝前半小節 Bb、後半 C */
   chords: string;
   /** 旋律：小節用 | 分隔，「A5:2」＝A5 長 2 個 16 分音符，「-:4」＝休息；小節數比 bars 少時從頭重複 */
@@ -23,95 +33,139 @@ export interface Section {
   drums: DrumStyle;
   /** 移調（半音） */
   transpose?: number;
-  /** 連打：[段落內第幾小節, 第幾格, 長幾格]，三種難度共用 */
-  rolls?: [number, number, number][];
-  /** 譜面：每小節 16 格，p＝粉、b＝藍、.＝空，小節用 | 分隔，不夠就重複 */
-  chart: Record<Level, string>;
 }
 
 export interface Song {
   id: string;
   title: string;
   bpm: number;
+  sections: ChartSection[];
+  /** 音檔曲子：src 相對網站根目錄，offset＝第一拍在檔案裡的秒數 */
+  audio?: { src: string; offset: number };
+}
+
+export interface SynthSong extends Song {
   sections: Section[];
 }
+
+// 〈To Be Free〉by Nck 的 0:00～0:31（public/music/to-be-free.mp3），124 BPM、4/4、G 小調 house
+// 授權：BreakingCopyright「Free To Use YouTube license」，使用者 2026-10-27 確認可以用在遊戲；要署名（rhythm.ts 說明視窗、intro.ts 玩法說明）
+// 結構是 2026-10-27 用 onset 分析出來的：第 1 小節前奏漸強；第 2～9 小節主歌，切分和弦落在每小節第 2、4、8、11、14 格，
+// 第 9 小節往副歌堆（後半放連打）；第 10～16 小節副歌，四拍大鼓＋反拍
+export const TO_BE_FREE: Song = {
+  id: 'tobefree',
+  title: 'To Be Free',
+  bpm: 124,
+  audio: { src: 'music/to-be-free.mp3', offset: 0.115 },
+  sections: [
+    {
+      // 前奏：聲音漸強，最後半小節才開始
+      bars: 1,
+      chart: {
+        easy: '........p.......',
+        normal: '........p.......',
+        hard: '........p...b...',
+      },
+    },
+    {
+      // 主歌：跟著切分和弦；最後一小節後半連打，接副歌
+      bars: 8,
+      rolls: [[7, 6, 6]],
+      chart: {
+        easy: '....p...b.....p.|....b...p.....b.|....p...b.....p.|....b...p.....b.|....p...b.....p.|....b...p.....b.|....p...b.....p.|....p...........',
+        normal: '..p.b...p.....b.|..b.p...b.....p.|..p.b...p.....b.|..b.p...b.....p.|..p.b...p.....b.|..b.p...b.....p.|..p.b...p.....b.|..p.b...........',
+        hard: 'p.b.p...b..p..b.|b.p.b...p..b..p.|p.b.p...b..p..b.|b.p.b...p..b..p.|p.b.p...b..p..b.|b.p.b...p..b..p.|p.b.p...b..p..b.|p.b.p...........',
+      },
+    },
+    {
+      // 副歌：大鼓四拍＋反拍
+      bars: 7,
+      chart: {
+        easy: 'p...b...p...b...',
+        normal: 'p...b.b.p...b...|p...b...p.b.b...',
+        hard: 'p.b.p...p.b.p.b.|p.b.p.b.p.b.b...',
+      },
+    },
+  ],
+};
+
 
 // 一局約 30 秒（使用者 2026-10-25 選的）：前奏 2 → Drop A 6 → Build-up 2 → Drop B 5 → 結尾 1，共 16 小節
 // 使用者只喜歡 Drop（副歌），前面的傳統主歌、往上爬的音階都嫌老氣，所以整首都用 Drop 的切片主題，不放傳統主歌
 // F 小調，和弦循環 Fm9 → Dbmaj7 → Ab(add9) → Eb；難度：簡單 OK，普通只用八分音符位置（使用者覺得原本普通跳太難）
 const HOOK = ['F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 C6:1 Bb5:1 -:2 Ab5:2', 'F6:1 -:2 Eb6:1 -:2 C6:2 Bb5:1 -:1 Ab5:1 Bb5:1 -:2 C6:2', 'F5:1 -:2 Ab5:1 -:2 C6:2 Eb6:1 -:1 F6:1 Ab6:1 -:2 F6:2', 'Eb6:2 -:1 C6:2 -:1 Bb5:2 -:4 C6:1 Eb6:1 -:2'];
 
-export const SONGS: Song[] = [
-  {
-    id: 'party',
-    title: '克拉派對', // 暫定曲名，使用者可以改
-    bpm: 128,
-    sections: [
-      {
-        // 前奏：主題先「悶著」放一次（濾波關小），像隔著牆聽到
-        bars: 2,
-        chords: 'Fm9 Dbmaj7',
-        lead: `${HOOK[0]}|${HOOK[1]}`,
-        pluck: '',
-        drums: 'intro',
-        chart: {
-          easy: 'p.......p.......|p...b...p...b...',
-          normal: 'p...b...p...b...|p...b...p.b...b.',
-          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.',
-        },
+export const PARTY: SynthSong = {
+  id: 'party',
+  title: '克拉派對', // 暫定曲名，使用者可以改
+  bpm: 128,
+  sections: [
+    {
+      // 前奏：主題先「悶著」放一次（濾波關小），像隔著牆聽到
+      bars: 2,
+      chords: 'Fm9 Dbmaj7',
+      lead: `${HOOK[0]}|${HOOK[1]}`,
+      pluck: '',
+      drums: 'intro',
+      chart: {
+        easy: 'p.......p.......|p...b...p...b...',
+        normal: 'p...b...p...b...|p...b...p.b...b.',
+        hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.',
       },
-      {
-        // Drop A：人聲切片風格的短音主題，3-3-2 切分、八度跳躍；supersaw 和弦跟著大鼓吸
-        bars: 6,
-        chords: 'Fm9 Dbmaj7 Abadd9 Eb Fm9 Dbmaj7',
-        lead: HOOK.join('|'),
-        pluck: '',
-        drums: 'chorus',
-        chart: {
-          easy: 'p...b...p...b...|p.......b.......',
-          normal: 'p...b...p.b...b.|p...b...p.b...b.|p...b...p.b...b.|p.....b.....b...',
-          hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.....bb..',
-        },
+    },
+    {
+      // Drop A：人聲切片風格的短音主題，3-3-2 切分、八度跳躍；supersaw 和弦跟著大鼓吸
+      bars: 6,
+      chords: 'Fm9 Dbmaj7 Abadd9 Eb Fm9 Dbmaj7',
+      lead: HOOK.join('|'),
+      pluck: '',
+      drums: 'chorus',
+      chart: {
+        easy: 'p...b...p...b...|p.......b.......',
+        normal: 'p...b...p.b...b.|p...b...p.b...b.|p...b...p.b...b.|p.....b.....b...',
+        hard: 'p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.....bb..',
       },
-      {
-        // Build-up：同一個音的切片越打越快（八分 → 十六分）、riser 往上掃，第二小節後半連打，其他樂器抽掉
-        bars: 2,
-        chords: 'Dbmaj7 Eb',
-        lead: 'C6:2 C6:2 C6:2 C6:2 Eb6:1 Eb6:1 Eb6:1 Eb6:1 F6:1 F6:1 F6:1 F6:1|F6:4 -:12',
-        pluck: '',
-        drums: 'build',
-        rolls: [[1, 4, 8]],
-        chart: {
-          easy: 'p...p...p...p...|p...............',
-          normal: 'p.p.p.p.b.b.b.b.|p...............',
-          hard: 'p.p.p.p.bbbbbbbb|p...............',
-        },
+    },
+    {
+      // Build-up：同一個音的切片越打越快（八分 → 十六分）、riser 往上掃，第二小節後半連打，其他樂器抽掉
+      bars: 2,
+      chords: 'Dbmaj7 Eb',
+      lead: 'C6:2 C6:2 C6:2 C6:2 Eb6:1 Eb6:1 Eb6:1 Eb6:1 F6:1 F6:1 F6:1 F6:1|F6:4 -:12',
+      pluck: '',
+      drums: 'build',
+      rolls: [[1, 4, 8]],
+      chart: {
+        easy: 'p...p...p...p...|p...............',
+        normal: 'p.p.p.p.b.b.b.b.|p...............',
+        hard: 'p.p.p.p.bbbbbbbb|p...............',
       },
-      {
-        // Drop B：從較高的變奏開始，最後收在 Dbmaj7/Eb 準備回主和弦
-        bars: 5,
-        chords: 'Abadd9 Eb Fm9 Dbmaj7 Dbmaj7/Eb',
-        lead: `${HOOK[2]}|${HOOK[3]}|${HOOK[0]}|${HOOK[1]}|F6:1 -:2 Eb6:1 -:2 C6:2 Eb6:2 F6:4 -:2`,
-        pluck: '',
-        drums: 'chorus',
-        chart: {
-          easy: 'p...b...p...b...|p.......b.......',
-          normal: 'p...b...p.b...b.|p.....b.....b...|p...b...p.b...b.|p...b...p.b...b.|p...b...p.b.....',
-          hard: 'p..b..p.p.bp..b.|p..b..p.....bb..|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.b.p...',
-        },
+    },
+    {
+      // Drop B：從較高的變奏開始，最後收在 Dbmaj7/Eb 準備回主和弦
+      bars: 5,
+      chords: 'Abadd9 Eb Fm9 Dbmaj7 Dbmaj7/Eb',
+      lead: `${HOOK[2]}|${HOOK[3]}|${HOOK[0]}|${HOOK[1]}|F6:1 -:2 Eb6:1 -:2 C6:2 Eb6:2 F6:4 -:2`,
+      pluck: '',
+      drums: 'chorus',
+      chart: {
+        easy: 'p...b...p...b...|p.......b.......',
+        normal: 'p...b...p.b...b.|p.....b.....b...|p...b...p.b...b.|p...b...p.b...b.|p...b...p.b.....',
+        hard: 'p..b..p.p.bp..b.|p..b..p.....bb..|p..b..p.p.bp..b.|p..b..p.p.bp..b.|p..b..p.p.b.p...',
       },
-      {
-        // 結尾：最後一聲
-        bars: 1,
-        chords: 'Fm9',
-        lead: 'F6:8 -:8',
-        pluck: 'X...............',
-        drums: 'end',
-        chart: { easy: 'p...............', normal: 'p...............', hard: 'p...............' },
-      },
-    ],
-  },
-];
+    },
+    {
+      // 結尾：最後一聲
+      bars: 1,
+      chords: 'Fm9',
+      lead: 'F6:8 -:8',
+      pluck: 'X...............',
+      drums: 'end',
+      chart: { easy: 'p...............', normal: 'p...............', hard: 'p...............' },
+    },
+  ],
+};
+
+export const SONGS: Song[] = [TO_BE_FREE, PARTY];
 
 // ---- 展開 ----
 
@@ -161,7 +215,7 @@ export interface Bar {
   rolls: [number, number][]; // 這小節裡的連打 [第幾格, 長幾格]
 }
 
-export function songBars(song: Song): Bar[] {
+export function songBars(song: SynthSong): Bar[] {
   const bars: Bar[] = [];
   for (const sec of song.sections) {
     const tp = sec.transpose ?? 0;

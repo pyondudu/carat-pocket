@@ -5,8 +5,8 @@
 import { CHARACTERS } from '../data/characters';
 import { drawCharacter, hasSprite, type Motion } from '../draw';
 import { drawCaratBong, type Glow } from '../drinkart';
-import { audio, heardTime, padSound, tone } from '../audio';
-import { expandChart, LEVEL_LABEL, LEVEL_TRAVEL, LEVELS, songBars, SONGS, type Level } from '../data/songs';
+import { audio, heardTime, loadTrack, padSound, playTrack, tone } from '../audio';
+import { expandChart, LEVEL_LABEL, LEVEL_TRAVEL, LEVELS, PARTY, songBars, TO_BE_FREE, totalBars, type Bar, type Level, type Song } from '../data/songs';
 import { playBar } from '../music';
 import { go, type Scene } from '../router';
 import { applyRhythm, GAME_ENERGY, GAME_MOOD, rhythmBlocked } from '../pet';
@@ -150,6 +150,7 @@ export function rhythmScene(): Scene {
     if (e.key === 'j' || e.key === 'J' || e.key === 'ArrowRight') press('blue');
   };
   let press: (c: Glow) => void = () => {};
+  let stopTrack = () => {};
 
   return {
     mount(root) {
@@ -165,10 +166,29 @@ export function rhythmScene(): Scene {
       let playing = false;
       let t0 = 0; // 第一拍的音訊時間
       let scheduledBar = 0;
-      const song = SONGS[0];
-      const bars = songBars(song);
-      const STEP = 60 / song.bpm / 4; // 16 分音符（秒）
-      const BAR = STEP * 16;
+      // 正式曲是音檔〈To Be Free〉；音檔載入失敗（例如離線第一次開）就改用程式合成的「克拉派對」
+      let song: Song = TO_BE_FREE;
+      let track: AudioBuffer | null = null;
+      let ready = false; // 音檔載入完成（或確定失敗、改用備用曲）
+      let synthBars: Bar[] = []; // 只有合成曲用得到
+      let STEP = 60 / song.bpm / 4; // 16 分音符（秒）
+      let BAR = STEP * 16;
+      let songBarCount = totalBars(song);
+      const useSong = (s: Song) => {
+        song = s;
+        STEP = 60 / s.bpm / 4;
+        BAR = STEP * 16;
+        songBarCount = totalBars(s);
+        synthBars = s === PARTY ? songBars(PARTY) : [];
+      };
+      let onReady = () => {};
+      loadTrack(`${import.meta.env.BASE_URL}${TO_BE_FREE.audio!.src}`)
+        .then((buf) => (track = buf))
+        .catch(() => useSong(PARTY))
+        .finally(() => {
+          ready = true;
+          onReady();
+        });
       let level: Level | null = null;
       let TRAVEL = LEVEL_TRAVEL.normal; // 音符從右邊出現到判定圈的秒數
       const notes: Note[] = [];
@@ -203,8 +223,8 @@ export function rhythmScene(): Scene {
       const schedule = () => {
         if (!playing) return;
         const ac = audio();
-        while (scheduledBar < bars.length && t0 + scheduledBar * BAR < ac.currentTime + 0.6) {
-          playBar(bars[scheduledBar], t0 + scheduledBar * BAR, STEP);
+        while (scheduledBar < synthBars.length && t0 + scheduledBar * BAR < ac.currentTime + 0.6) {
+          playBar(synthBars[scheduledBar], t0 + scheduledBar * BAR, STEP);
           scheduledBar++;
         }
       };
@@ -261,6 +281,8 @@ export function rhythmScene(): Scene {
         t0 = ac.currentTime + COUNTDOWN;
         // 倒數的嗶聲：3、2、1
         for (let k = COUNTDOWN; k >= 1; k--) tone(t0 - k, 880, 0.12, 'triangle', 0.25);
+        stopTrack();
+        if (song.audio && track) stopTrack = playTrack(track, t0, song.audio.offset, songBarCount * BAR);
         scheduledBar = 0;
         notes.length = 0;
         for (const n of expandChart(song, lv)) notes.push({ t: n.step * STEP, color: n.color, ...(n.color === 'roll' ? { len: n.steps! * STEP, rolls: 0 } : {}) });
@@ -277,6 +299,7 @@ export function rhythmScene(): Scene {
       const finish = () => {
         playing = false;
         clearInterval(timer);
+        stopTrack();
         const lv = level!;
         const total = expandChart(song, lv).filter((n) => n.color !== 'roll').length;
         const r = scoreOf(counts, total, lv);
@@ -318,13 +341,20 @@ export function rhythmScene(): Scene {
           panel.replaceChildren(h('p', { className: 'hint', textContent: blocked }), h('button', { className: 'primary', textContent: '回房間', onclick: () => go('home') }));
           return;
         }
-        const startBtn = h('button', { className: 'primary', textContent: pet ? `開始！（體力 −${GAME_ENERGY}）` : '開始！', disabled: !level, onclick: () => start(level!) });
+        const startBtn = h('button', { className: 'primary', onclick: () => start(level!) });
+        // 音檔還沒載完時顯示載入中，不能按
+        const updateStart = () => {
+          startBtn.textContent = !ready ? '音樂載入中…' : pet ? `開始！（體力 −${GAME_ENERGY}）` : '開始！';
+          startBtn.disabled = !ready || !level;
+        };
+        onReady = updateStart;
+        updateStart();
         const buttons = LEVELS.map((lv) => {
           const b = h('button', { className: `level ${lv}`, textContent: LEVEL_LABEL[lv] });
           b.onclick = () => {
             level = lv;
             for (const x of buttons) x.classList.toggle('on', x === b);
-            startBtn.disabled = false;
+            updateStart();
           };
           b.classList.toggle('on', lv === level);
           return b;
@@ -339,6 +369,7 @@ export function rhythmScene(): Scene {
       const closeIntro = modal(
         h('h2', { textContent: '🎵 節奏應援' }),
         h('p', { textContent: '跟著歌曲用按鈕應援吧！\n點選難易程度後開始遊戲' }),
+        h('p', { className: 'credit', textContent: '音樂：To Be Free – Nck\nMusic powered by BreakingCopyright' }),
         h('button', { className: 'primary', textContent: '好！', onclick: () => closeIntro() }),
       );
 
@@ -416,8 +447,8 @@ export function rhythmScene(): Scene {
         // 清掉已經過去很久的音符
         while (notes.length && notes[0].t + (notes[0].len ?? 0) < st - 1) notes.shift();
         // 剩餘秒數（跟手搖飲一樣顯示在按鈕上方）
-        const left = bars.length * BAR - st;
-        const text = `⏱ ${Math.max(0, Math.ceil(Math.min(left, bars.length * BAR)))} 秒`;
+        const left = songBarCount * BAR - st;
+        const text = `⏱ ${Math.max(0, Math.ceil(Math.min(left, songBarCount * BAR)))} 秒`;
         if (info.textContent !== text) info.textContent = text;
         if (left < -0.8) finish();
       };
@@ -495,6 +526,7 @@ export function rhythmScene(): Scene {
       raf = requestAnimationFrame(draw);
     },
     unmount() {
+      stopTrack();
       cancelAnimationFrame(raf);
       clearInterval(timer);
       window.removeEventListener('keydown', onKey);

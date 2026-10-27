@@ -7,7 +7,7 @@ import { applyInvite, doAction, feedSpecial, INVITE_ENERGY, INVITE_MOOD, moodOf,
 import { go, type Scene } from '../router';
 import { DAILY_FOOD, dailyFoodMessage, GUEST_HOURS, mainPet, passTime, resetSave, save, sendGuestHome, state } from '../state';
 import { foodIcon, h, modal, toast } from '../ui';
-import { howToPlay } from './intro';
+import { howToPlay, musicCredit } from './intro';
 
 export const ROOM = 64; // 房間以 64 格像素畫
 export const ZOOM = 4; // 畫布實際為 256px，角色圖才有足夠解析度
@@ -246,7 +246,7 @@ export function homeScene(): Scene {
       // 玩法說明最下面放「重新開始」，要再確認一次才會刪存檔（原本只有 #debug 有重來）
       const helpModal = () => {
         const restart = h('button', { className: 'secondary danger', textContent: '🔄 重新開始' });
-        const closeHelp = modal(h('h2', { textContent: '怎麼玩' }), howToPlay(), restart);
+        const closeHelp = modal(h('h2', { textContent: '怎麼玩' }), howToPlay(), restart, musicCredit());
         restart.onclick = () => {
           closeHelp();
           const yes = h('button', { className: 'primary danger', textContent: '確定重新開始' });

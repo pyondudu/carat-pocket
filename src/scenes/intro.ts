@@ -19,6 +19,16 @@ export function howToPlay(): HTMLElement {
   );
 }
 
+/** 節奏應援音樂的署名（BreakingCopyright 要求寫曲名、作者、授權與連結） */
+export function musicCredit(): HTMLElement {
+  return h(
+    'p',
+    { className: 'credit' },
+    '節奏應援音樂：To Be Free – Nck\nLicense: Free To Use YouTube license\nMusic powered by ',
+    h('a', { href: 'https://breakingcopyright.com/song/nck-to-be-free', target: '_blank', rel: 'noopener', textContent: 'BreakingCopyright' }),
+  );
+}
+
 export function introScene(): Scene {
   return {
     mount(root) {
@@ -32,6 +42,7 @@ export function introScene(): Scene {
           h('img', { className: 'intro-logo', src: './icons/diamond-px.png', alt: '' }),
           howToPlay(),
           h('button', { className: 'primary start', textContent: '開始遊戲', onclick: () => go('select') }),
+          musicCredit(),
         ),
       );
     },

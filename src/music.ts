@@ -80,7 +80,7 @@ export function playBar(bar: Bar, at: number, step: number): void {
   if (bar.last && !bar.rolls.length && style !== 'end') for (let s = 12; s < 16; s++) snare(t(s), 0.12 + (s - 12) * 0.06);
 }
 
-// ---- Disc Jockey：分層編曲，鼓／低音／旋律可以各自開關，和弦一直開著當底（使用者 2026-10-27 定案） ----
+// ---- DJ：分層編曲，鼓／低音／旋律可以各自開關，和弦一直開著當底（使用者 2026-10-27 定案） ----
 
 export interface DjLayers {
   drums: boolean;
@@ -97,7 +97,7 @@ export interface DjBar {
 }
 
 /** 排一拍（beat＝這小節第幾拍 0～3，at＝這一拍開始的時間）：house 四拍大鼓、反拍低音、跟著大鼓吸的和弦
- *  一拍一拍排，Disc Jockey 的開關下一拍就生效；和弦半小節一起排（每拍重排會一直重新起音） */
+ *  一拍一拍排，DJ 的開關下一拍就生效；和弦半小節一起排（每拍重排會一直重新起音） */
 export function playDjBeat(bar: DjBar, beat: number, at: number, step: number, on: DjLayers): void {
   const t = (s: number) => at + (s - beat * 4) * step;
   const chord = bar.chords[beat < 2 ? 0 : 1];

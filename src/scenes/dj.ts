@@ -1,4 +1,4 @@
-// Disc Jockey 小遊戲（使用者 2026-10-27 定名）：疊音軌 Mix＋刷碟。本命戴耳機站在 DJ 台後面，背景是夜店
+// DJ 小遊戲（使用者 2026-10-27 定名 Disc Jockey，同日改成 DJ）：疊音軌 Mix＋刷碟。本命戴耳機站在 DJ 台後面，背景是夜店
 // 流程照節奏應援：說明視窗 → 開始 → 3、2、1 倒數 → 16 小節約 31 秒 → 結算。規則在 src/dj.ts，曲子在 src/data/djsong.ts
 // 操作（使用者 2026-10-27 改版）：房間下面一排像素圖示亮起要開的音軌、圖示下倒數條是這張點單還剩多久；
 // 下面三顆音軌鍵（按了亮起、再按變灰）、一個圓形唱盤（刷碟）
@@ -512,7 +512,7 @@ export function djScene(): Scene {
 
       ready();
       const closeIntro = modal(
-        h('h2', { textContent: '🎧 Disc Jockey' }),
+        h('h2', { textContent: '🎧 DJ' }),
         h('p', { textContent: '房間下面亮起哪個圖示，\n就把那個開關打開！' }),
         h('p', { textContent: '唱盤發光時，\n等外圈縮到唱盤邊緣按下刷碟' }),
         h('button', { className: 'primary', textContent: '好！', onclick: () => closeIntro() }),
@@ -522,7 +522,7 @@ export function djScene(): Scene {
         h(
           'div',
           { className: 'screen rhythm' },
-          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎧 Disc Jockey' }), coins),
+          h('div', { className: 'bar' }, h('button', { className: 'secondary', textContent: '← 房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('h1', { textContent: '🎧 DJ' }), coins),
           h('div', { className: 'rhythm-stage' }, room),
           panel,
         ),

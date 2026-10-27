@@ -211,7 +211,7 @@ function gritNode(): WaveShaperNode {
   return grit;
 }
 
-/** 合成低音（Disc Jockey 用）：鋸齒波＋高八度方波過破音，濾波從亮很快變悶（「啵」一聲）；
+/** 合成低音（DJ 用）：鋸齒波＋高八度方波過破音，濾波從亮很快變悶（「啵」一聲）；
  *  使用者 2026-10-27 反映低音聽不出混音感：手機喇叭放不出純低頻，要有泛音和明顯的節奏才聽得出來 */
 export function bassSynth(t: number, freq: number, dur: number, peak = 0.12): void {
   const g = ac!.createGain();
@@ -288,7 +288,7 @@ export function riser(t: number, dur: number, peak = 0.16): void {
   src.stop(t + dur + 0.03);
 }
 
-/** 刷碟（Disc Jockey）：濾波噪音＋音高來回滑的「wicka-wicka」，dur 秒內來回 strokes 下（長刷） */
+/** 刷碟（DJ）：濾波噪音＋音高來回滑的「wicka-wicka」，dur 秒內來回 strokes 下（長刷） */
 export function scratch(t: number, dur: number, strokes = 6): void {
   // 使用者 2026-10-27：太小聲、太短 → 濾波調寬（Q 2）、每一下維持到 70% 才收（原本一出來就快速衰減）、音量加大
   const d = dur / strokes;

@@ -13,8 +13,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   </head>
   <body>
-    <!-- 角色圖下載完之前先顯示，畫面切換時會被換掉 -->
-    <div id="app"><p class="loading">MINITEEN 正在趕來… 🐾</p></div>
+    <!-- 角色圖下載完之前先顯示，畫面切換時會被換掉（使用者 2026-10-27：像素 Logo＋進度條） -->
+    <div id="app">
+      <div class="loading">
+        <img class="loading-logo" src="./icons/diamond-px.png" alt="" />
+        <p class="loading-title">Carat Pocket</p>
+        <div class="loading-bar"><i id="loading-fill"></i></div>
+        <p class="loading-text" id="loading-text">載入中…</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -35,12 +35,19 @@ function welcomeBack(): void {
   if (result.dailyFood) toast(dailyFoodMessage(result.dailyFood));
 }
 
-loadSprites().then(() => {
+// 讀取畫面的進度條（index.html 裡的 #loading-fill）
+const fill = document.getElementById('loading-fill');
+const loadingText = document.getElementById('loading-text');
+loadSprites((done, total) => {
+  const pct = Math.round((done / total) * 100);
+  if (fill) fill.style.width = `${Math.max(4, pct)}%`;
+  if (loadingText) loadingText.textContent = `載入中… ${pct}%`;
+}).then(() => {
   // #sheet：角色總表，檢查表情與比例用
   if (location.hash === '#sheet') return go('sheet');
   // #rhythm：應援預覽（還沒選本命也能看）
   if (location.hash === '#rhythm') return go('rhythm');
-  // #dj：Disc Jockey 預覽（製作中）
+  // #dj：DJ 預覽（製作中）
   if (location.hash === '#dj') return go('dj');
   welcomeBack();
   go(state.mainId ? 'home' : 'intro');

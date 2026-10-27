@@ -1,4 +1,4 @@
-// Disc Jockey 小遊戲用的耳機：程式畫的像素耳機，疊在角色圖上（圖片座標，跟著 drawCharacter 的縮放、呼吸一起動）
+// DJ 小遊戲用的耳機：程式畫的像素耳機，疊在角色圖上（圖片座標，跟著 drawCharacter 的縮放、呼吸一起動）
 // 款式是使用者 2026-10-27 用 THEpalee 試過定案的：戴在頭上、黑色耳罩、深灰頭帶加高光，頭帶是圓弧、跟頭頂留一點空隙
 
 import faces from './data/faces.json';

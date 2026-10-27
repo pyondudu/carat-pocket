@@ -197,7 +197,9 @@ const images = new Map<string, HTMLImageElement>();
 const RIGS = faces as unknown as Record<string, FaceRig>; // JSON 由 tools/face_rig.py 產生
 
 /** 開始遊戲前先載入所有角色圖；載入失敗的就退回佔位圖 */
-export function loadSprites(): Promise<void> {
+/** onProgress(已載入, 總數)：讀取畫面的進度條用 */
+export function loadSprites(onProgress?: (done: number, total: number) => void): Promise<void> {
+  let done = 0;
   const jobs = SPRITE_IDS.flatMap((id) =>
     // 有程式五官的角色不需要生病版，改載無五官底圖
     [...new Set(Object.values(SPRITE_FILES))].map((f) => (RIGS[id] && f === 'sick' ? 'base' : f)).map(
@@ -206,9 +208,13 @@ export function loadSprites(): Promise<void> {
           const img = new Image();
           img.onload = () => {
             images.set(`${id}:${file}`, img);
+            onProgress?.(++done, jobs.length);
             resolve();
           };
-          img.onerror = () => resolve();
+          img.onerror = () => {
+            onProgress?.(++done, jobs.length);
+            resolve();
+          };
           img.src = `${import.meta.env.BASE_URL}sprites/${id}/${file}.png`;
         }),
     ),
@@ -289,7 +295,7 @@ export function isHopping(m: Motion): boolean {
 }
 
 /** 畫角色：水平置中於 cx、腳底對齊 bottom、高度約 height 像素；有 motion 時會呼吸、眨眼、跳 */
-/** headphones：Disc Jockey 小遊戲戴耳機 */
+/** headphones：DJ 小遊戲戴耳機 */
 export function drawCharacter(ctx: Ctx, c: Character, pose: Pose, cx: number, bottom: number, height: number, motion?: Motion, headphones = false): void {
   const rig = RIGS[c.id];
   const base = rig && images.get(`${c.id}:base`);

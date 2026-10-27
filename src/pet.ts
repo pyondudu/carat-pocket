@@ -107,7 +107,7 @@ export function applyRhythm(pet: PetState): void {
   pet.stats.mood = clamp(pet.stats.mood + GAME_MOOD);
 }
 
-/** 能不能玩 Disc Jockey；不能的話回傳原因 */
+/** 能不能玩 DJ；不能的話回傳原因 */
 export function djBlocked(pet: PetState): string | null {
   if (pet.sleeping) return '噓…正在睡覺，起床再來打碟吧';
   if (pet.stats.energy < GAME_ENERGY) return '太累了，先睡一下再來打碟吧';

@@ -189,7 +189,14 @@ canvas.room {
 .bar .help { padding: 4px 10px; font-size: 0.8rem; white-space: nowrap; background: #fff3d6; }
 
 /* 下載角色圖時 */
-.loading { text-align: center; margin-top: 40vh; color: var(--muted); }
+/* 讀取畫面：像素 Logo＋粉藍像素進度條（index.html，main.ts 跟著角色圖下載進度更新） */
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; gap: 10px; color: var(--muted); }
+.loading-logo { width: 96px; image-rendering: pixelated; }
+.loading-title { font-family: 'Silkscreen', system-ui, sans-serif; font-weight: 700; font-size: min(2.4rem, 9vw); color: #c2607a; letter-spacing: 1px; white-space: nowrap; margin: 0; }
+.loading-bar { width: min(260px, 70vw); height: 22px; border: 3px solid var(--line); border-radius: 4px; background: #fff; padding: 2px; box-shadow: 3px 3px 0 var(--line); }
+.loading-bar i { display: block; height: 100%; width: 4%; transition: width 0.15s;
+  background: repeating-linear-gradient(90deg, transparent 0 8px, #fff 8px 10px), linear-gradient(90deg, #f78fb0, #6f9ee8); }
+.loading-text { margin: 0; font-size: 0.9rem; font-weight: 700; }
 
 /* 有新版本的提示（固定在畫面下方） */
 /* 置中不用 transform：按鈕按下時的 transform 會蓋掉它，按鈕會往右跳 */
@@ -218,7 +225,7 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .pad { font-size: 1.8rem; font-weight: 700; padding: 30px 0; touch-action: none; border-radius: 20px; }
 .pad.pink { background: #f9b6cb; }
 .pad.blue { background: #a9c6f0; }
-/* Disc Jockey：三顆音軌切換鍵（開著時亮起）＋一顆刷碟鍵 */
+/* DJ：三顆音軌切換鍵（開著時亮起）＋一顆刷碟鍵 */
 .dj-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 /* 音軌鍵：按了亮起（顏色跟房間裡的圖示框一樣），再按變灰關掉 */
 .dj-switch { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 0; font-size: 1rem; font-weight: 700; touch-action: none; border-radius: 16px; background: #e4e1ea; color: #9a95a8; }

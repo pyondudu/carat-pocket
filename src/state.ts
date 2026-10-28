@@ -79,9 +79,10 @@ function load(): GameState {
         data.version = 5;
       }
       if (data.version === 5) {
-        // 版本 6：拿掉每 4 小時補食物，改成每天 9:00 發放；從下一個 9:00 開始發
+        // 版本 6：拿掉每 4 小時補食物，改成每天 9:00 發放；以上次玩的時間為準，之後過了 9:00 就照發
+        // （原本用升級當下的時間，隔天才第一次開新版的人，當天的份會被跳過）
         delete (data as { foodProgress?: number }).foodProgress;
-        data.dailyFoodAt = lastDailyTime();
+        data.dailyFoodAt = lastDailyTime(data.lastSeen);
         data.version = 6;
       }
       if (data.version === 6) {

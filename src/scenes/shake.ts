@@ -9,7 +9,7 @@ import { go, type Scene } from '../router';
 import {
   availableIngredients, coinsFor, makeDrink, MAX_PICK, MIN_PICK, QUALITY_LABELS, qualityOf, SHAKE_SECONDS, type Quality,
 } from '../shake';
-import { mainPet, passTime, save, state } from '../state';
+import { mainPet, passTimeNow, save, state } from '../state';
 import { h, modal, toast } from '../ui';
 import { drawClock, ROOM, ZOOM } from './home';
 
@@ -106,7 +106,7 @@ export function shakeScene(): Scene {
       const char = getCharacter(state.mainId!);
       const pet = mainPet()!;
       // 進來先補算時間，體力才是最新的
-      passTime(Date.now() - state.lastSeen);
+      passTimeNow();
       save();
 
       let phase: Phase = 'pick';
@@ -186,7 +186,7 @@ export function shakeScene(): Scene {
 
       const finish = () => {
         clearInterval(timer);
-        passTime(Date.now() - state.lastSeen);
+        passTimeNow();
         const drink = makeDrink(picked);
         const quality = qualityOf(taps, picked, drink);
         const isNew = drink !== MYSTERY && !state.codex[drink.id];

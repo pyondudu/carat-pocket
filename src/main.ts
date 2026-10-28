@@ -30,9 +30,11 @@ function welcomeBack(): void {
   if (!result || !pet) return;
   save();
   const msg = awayMessage(result.elapsed, result.before, pet.stats, result.guestLeft);
-  if (msg) modal(h('h2', { textContent: '你不在的時候…' }), h('p', { className: 'away', textContent: msg }));
+  const daily = result.dailyFood === null ? null : dailyFoodMessage(result.dailyFood);
+  // 有「你不在的時候…」視窗就把發放訊息寫進視窗，免得 toast 一閃就錯過
+  if (msg) modal(h('h2', { textContent: '你不在的時候…' }), h('p', { className: 'away', textContent: daily ? `${msg}\n${daily}` : msg }));
   else if (result.guestLeft) toast(`${getCharacter(result.guestLeft).name} 回家了，下次再來玩～`);
-  if (result.dailyFood) toast(dailyFoodMessage(result.dailyFood));
+  if (daily && !msg) toast(daily);
 }
 
 // 讀取畫面的進度條（index.html 裡的 #loading-fill）

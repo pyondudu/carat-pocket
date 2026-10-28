@@ -11,7 +11,7 @@ import { playBar } from '../music';
 import { go, type Scene } from '../router';
 import { applyRhythm, GAME_ENERGY, GAME_MOOD, rhythmBlocked } from '../pet';
 import { RANK_LABEL, scoreOf } from '../rhythm';
-import { mainPet, passTime, save, state } from '../state';
+import { mainPet, passTimeNow, save, state } from '../state';
 import { h, modal } from '../ui';
 import { drawClock, drawRoom, NOTE, ROOM, ZOOM } from './home';
 
@@ -159,7 +159,7 @@ export function rhythmScene(): Scene {
       const pet = mainPet();
       if (pet) {
         // 進來先補算時間，體力才是最新的
-        passTime(Date.now() - state.lastSeen);
+        passTimeNow();
         save();
       }
       const coins = h('span', { className: 'coins', textContent: `🪙 ${state.coins}` });
@@ -271,7 +271,7 @@ export function rhythmScene(): Scene {
 
       const start = (lv: Level) => {
         if (pet) {
-          passTime(Date.now() - state.lastSeen);
+          passTimeNow();
           if (rhythmBlocked(pet)) return pick();
         }
         const ac = audio();
@@ -305,7 +305,7 @@ export function rhythmScene(): Scene {
         const r = scoreOf(counts, total, lv);
         let record = false;
         if (pet) {
-          passTime(Date.now() - state.lastSeen);
+          passTimeNow();
           state.coins += r.coins;
           applyRhythm(pet);
           const entry = (state.rhythm[`${song.id}:${lv}`] ??= { best: 0, plays: 0 });

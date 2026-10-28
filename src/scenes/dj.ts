@@ -11,7 +11,7 @@ import { drawCharacter, hasSprite, type Motion } from '../draw';
 import { playDjBeat, type DjLayers } from '../music';
 import { applyDj, djBlocked, GAME_ENERGY, GAME_MOOD } from '../pet';
 import { go, type Scene } from '../router';
-import { mainPet, passTime, save, state } from '../state';
+import { mainPet, passTimeNow, save, state } from '../state';
 import { h, modal } from '../ui';
 import { drawClock, ROOM, ZOOM } from './home';
 import { drawCountdown, WINDOWS } from './rhythm';
@@ -331,7 +331,7 @@ export function djScene(): Scene {
       const char = CHARACTERS[charIndex];
       const pet = mainPet();
       if (pet) {
-        passTime(Date.now() - state.lastSeen);
+        passTimeNow();
         save();
       }
       const coins = h('span', { className: 'coins', textContent: `🪙 ${state.coins}` });
@@ -444,7 +444,7 @@ export function djScene(): Scene {
 
       const start = () => {
         if (pet) {
-          passTime(Date.now() - state.lastSeen);
+          passTimeNow();
           if (djBlocked(pet)) return ready();
         }
         const ac = audio();
@@ -474,7 +474,7 @@ export function djScene(): Scene {
         const r = djScore(tally);
         let record = false;
         if (pet) {
-          passTime(Date.now() - state.lastSeen);
+          passTimeNow();
           state.coins += r.coins;
           applyDj(pet);
           state.dj.plays++;

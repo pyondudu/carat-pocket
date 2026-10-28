@@ -2,6 +2,7 @@
 
 import { getCharacter } from './data/characters';
 import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from './pet';
+import { toast } from './ui';
 
 const SAVE_KEY = 'carat-pocket-save';
 const VERSION = 8; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate；8：加入 DJ 紀錄 dj
@@ -145,22 +146,29 @@ export function chooseMain(id: string): void {
 /** 作客停留多久 */
 export const GUEST_HOURS = 2;
 
-/** 經過 ms 毫秒：主角數值衰減＋每日發放紫菜包飯；回傳這次發了幾個 */
-export function passTime(ms: number): number {
+/** 經過 ms 毫秒：主角數值衰減＋每日發放紫菜包飯；回傳這次發了幾個（0＝已經滿了），今天發過就回傳 null */
+export function passTime(ms: number): number | null {
   const pet = mainPet();
   if (pet) applyElapsed(pet, ms);
   const due = lastDailyTime();
-  if (state.dailyFoodAt >= due) return 0;
+  if (state.dailyFoodAt >= due) return null;
   state.dailyFoodAt = due;
   const before = state.food;
   state.food = Math.min(FOOD_CAP, state.food + DAILY_FOOD);
   return state.food - before;
 }
 
-export const dailyFoodMessage = (n: number) => `早安！今天的 ${n} 個紫菜包飯送到了`;
+export const dailyFoodMessage = (n: number) =>
+  n > 0 ? `早安！今天的 ${n} 個紫菜包飯送到了` : `早安！紫菜包飯已經有 ${FOOD_CAP} 個，\n今天的就先不發了`;
+
+/** 小遊戲畫面用：從 lastSeen 補算到現在，碰到每日發放就跳提示 */
+export function passTimeNow(): void {
+  const daily = passTime(Date.now() - state.lastSeen);
+  if (daily !== null) toast(dailyFoodMessage(daily));
+}
 
 /** 把經過的時間套用到主角，回傳 [經過毫秒, 套用前數值] */
-export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; guestLeft: string | null; dailyFood: number } | null {
+export function catchUp(now = Date.now()): { elapsed: number; before: PetStats; guestLeft: string | null; dailyFood: number | null } | null {
   const pet = mainPet();
   if (!pet) return null;
   const elapsed = Math.max(0, now - state.lastSeen);

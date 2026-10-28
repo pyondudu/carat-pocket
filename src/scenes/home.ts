@@ -59,7 +59,7 @@ export function homeScene(): Scene {
       // 依存檔的 lastSeen 補算到現在，和回到 App 時的補算共用同一個起點，不會重複扣
       const tick = () => {
         const daily = passTime(Date.now() - state.lastSeen);
-        if (daily) toast(dailyFoodMessage(daily));
+        if (daily !== null) toast(dailyFoodMessage(daily));
         const left = sendGuestHome();
         if (left) toast(`${getCharacter(left).name} 回家了，下次再來玩～`);
         save();

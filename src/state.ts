@@ -199,5 +199,5 @@ export function awayMessage(elapsed: number, before: PetStats, after: PetStats, 
     })
     .filter(Boolean);
   const guest = guestLeft ? `\n${getCharacter(guestLeft).name} 來玩過，已經回家了。` : '';
-  return `你離開了 ${time}。\n${lines.join('、') || '一切都好～'}${guest}`;
+  return `你離開了 ${time}。\n${lines.join('\n') || '一切都好～'}${guest}`;
 }

@@ -12,7 +12,7 @@ import { go, type Scene } from '../router';
 import { applyRhythm, GAME_ENERGY, GAME_MOOD, rhythmBlocked } from '../pet';
 import { RANK_LABEL, scoreOf } from '../rhythm';
 import { mainPet, passTimeNow, save, state } from '../state';
-import { h, modal } from '../ui';
+import { h, modal, toast } from '../ui';
 import { drawClock, drawRoom, NOTE, ROOM, ZOOM } from './home';
 
 const INK = '#2b2b2b';
@@ -151,6 +151,7 @@ export function rhythmScene(): Scene {
   };
   let press: (c: Glow) => void = () => {};
   let stopTrack = () => {};
+  let onVisibility = () => {};
 
   return {
     mount(root) {
@@ -333,6 +334,23 @@ export function rhythmScene(): Scene {
           h('div', { className: 'row' }, h('button', { className: 'secondary', textContent: '回房間', onclick: () => go(state.mainId ? 'home' : 'intro') }), h('button', { className: 'primary', textContent: '再玩一次', onclick: pick })),
         );
       };
+
+      // 切到背景：音檔會繼續播、合成曲的計時器變慢，回來時會爆音又全部漏掉，所以這局直接取消（不扣體力、不給獎勵）
+      let cancelled = false;
+      onVisibility = () => {
+        if (document.hidden && playing) {
+          playing = false;
+          clearInterval(timer);
+          stopTrack();
+          notes.length = 0;
+          cancelled = true;
+          pick();
+        } else if (!document.hidden && cancelled) {
+          cancelled = false;
+          toast('切到背景了，這局先取消');
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibility);
 
       // 選難度：簡單／普通／困難三顆按鈕，選好再按開始
       function pick(): void {
@@ -530,6 +548,7 @@ export function rhythmScene(): Scene {
       cancelAnimationFrame(raf);
       clearInterval(timer);
       window.removeEventListener('keydown', onKey);
+      document.removeEventListener('visibilitychange', onVisibility);
     },
   };
 }

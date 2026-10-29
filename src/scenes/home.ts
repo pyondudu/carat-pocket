@@ -19,6 +19,9 @@ export function homeScene(): Scene {
   let hopAt: number | undefined; // 最近一次互動的時間，角色會跳一下
   let guestHopAt: number | undefined; // 點客人時客人跳一下
   let sweepAt: number | undefined; // 按清潔後掃把開始掃的時間
+  let sweepTimer = 0;
+  let finishSweep = () => {};
+  let refreshNow = () => {};
 
   return {
     mount(root) {
@@ -175,6 +178,7 @@ export function homeScene(): Scene {
       // 朋友在的時候不能睡覺（睡覺和作客不能同時發生），起床則隨時可以
       const sleepBtn = h('button', {
         onclick: () => {
+          if (sweepAt !== undefined) return; // 掃完再睡，不然清潔會白掃
           if (!pet.sleeping && state.guest) return toast(`${getCharacter(state.guest.id).name} 還在作客，先請他回家再睡吧`);
           act('sleep');
           refresh();
@@ -187,10 +191,18 @@ export function homeScene(): Scene {
         if (pet.sleeping) return toast('噓…正在睡覺');
         if (pet.stats.clean >= TRASH_FROM) return toast('很乾淨，不需要清潔喔');
         sweepAt = performance.now();
-        window.setTimeout(() => {
+        sweepTimer = window.setTimeout(() => {
           sweepAt = undefined;
           act('clean');
         }, SWEEP_MS);
+        // 掃到一半離開房間：直接算掃完，不跳訊息
+        finishSweep = () => {
+          if (sweepAt === undefined) return;
+          clearTimeout(sweepTimer);
+          sweepAt = undefined;
+          doAction(pet, 'clean');
+          save();
+        };
       };
       const actions = h(
         'div',
@@ -339,6 +351,7 @@ export function homeScene(): Scene {
           ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
         raf = requestAnimationFrame(draw);
+      };
 
       // 點房間裡的角色會跳一下（有客人時點右半邊是客人）
       canvas.onpointerdown = (e) => {
@@ -346,11 +359,15 @@ export function homeScene(): Scene {
         if (guest() && e.clientX - rect.left > rect.width / 2) guestHopAt = performance.now();
         else if (!pet.sleeping) hopAt = performance.now();
       };
-      };
       raf = requestAnimationFrame(draw);
 
-      // 開著 App 時也依真實時間衰減
+      // 開著 App 時也依真實時間衰減；在背景時不存檔，免得蓋掉別的視窗剛存的資料（回來時 main.ts 會補算）
+      // 別的視窗改了存檔（main.ts 已經先同步）、或切回前景時，數值條和金幣馬上更新
+      refreshNow = () => refresh();
+      window.addEventListener('storage', refreshNow);
+      document.addEventListener('visibilitychange', refreshNow);
       timer = window.setInterval(() => {
+        if (document.hidden) return;
         tick();
         refresh();
       }, TICK_MS);
@@ -358,6 +375,9 @@ export function homeScene(): Scene {
     unmount() {
       cancelAnimationFrame(raf);
       clearInterval(timer);
+      finishSweep();
+      window.removeEventListener('storage', refreshNow);
+      document.removeEventListener('visibilitychange', refreshNow);
     },
   };
 }

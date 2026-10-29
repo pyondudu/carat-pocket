@@ -1,7 +1,7 @@
 // 快取程式：第一次打開後把網頁和角色圖存在手機裡，之後打開很快、沒網路也能玩
 // 首頁先上網抓（才拿得到新版），抓不到才用快取；其他檔案先用快取、背景再更新
 // 改快取規則時換名字，舊快取會在 activate 時刪掉
-const CACHE = 'carat-pocket-v2';
+const CACHE = 'carat-pocket-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) =>
@@ -25,8 +25,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          // 錯誤頁（404、500）不存，免得離線時打開看到錯誤頁
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
         })
         .catch(() => caches.match(req).then((hit) => hit ?? caches.match('./'))),

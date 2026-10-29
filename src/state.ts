@@ -5,6 +5,7 @@ import { applyElapsed, newPet, STAT_LABELS, type PetState, type PetStats } from 
 import { toast } from './ui';
 
 const SAVE_KEY = 'carat-pocket-save';
+const BACKUP_KEY = 'carat-pocket-save-backup';
 const VERSION = 8; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate；8：加入 DJ 紀錄 dj
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
@@ -51,13 +52,24 @@ function freshState(): GameState {
   return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, dj: { best: 0, plays: 0 }, lastSeen: Date.now() };
 }
 
+/** 存檔比這個程式新（舊版還開著）：照讀但不寫回，免得把新版的資料蓋掉 */
+let readOnly = false;
+/** 最後一次讀到或寫入的存檔字串：比對後才知道別的視窗有沒有改過 */
+let lastWritten: string | null = null;
+
 export const state: GameState = load();
 
 function load(): GameState {
+  let raw: string | null = null;
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    raw = localStorage.getItem(SAVE_KEY);
+    lastWritten = raw;
     if (raw) {
       const data = JSON.parse(raw) as GameState;
+      if (data.version > VERSION) {
+        readOnly = true;
+        return renameIds(data);
+      }
       if (data.version === 1) {
         // 版本 1 沒有圖鑑，補上空的，其他資料保留
         data.codex = {};
@@ -96,9 +108,47 @@ function load(): GameState {
       if (data.version === VERSION) return renameIds(data);
     }
   } catch {
-    // 存檔壞掉或無法讀取就重新開始
+    // 存檔壞掉或無法讀取就重新開始（下面會先備份）
   }
+  if (raw) backup(raw);
   return freshState();
+}
+
+/** 讀不懂的存檔先另存一份再重新開始；已經有備份就不蓋掉 */
+function backup(raw: string): void {
+  try {
+    if (!localStorage.getItem(BACKUP_KEY)) localStorage.setItem(BACKUP_KEY, raw);
+  } catch {
+    // 忽略
+  }
+}
+
+/** 存檔來自比較新的版本，這個畫面不會存檔 */
+export const saveBlocked = () => readOnly;
+
+/** 別的視窗改過存檔就重新讀進來；原地更新（場景手上的 pet 物件不換掉，畫面不用重新進入），
+ *  回傳本命有沒有換（別的視窗重新開始或選了本命，這時畫面要重新進入） */
+export function reloadIfChanged(): boolean {
+  let raw: string | null;
+  try {
+    raw = localStorage.getItem(SAVE_KEY);
+  } catch {
+    return false;
+  }
+  if (raw === lastWritten) return false;
+  readOnly = false;
+  const data = load();
+  const mainChanged = data.mainId !== state.mainId;
+  const pets = state.pets;
+  for (const [id, p] of Object.entries(data.pets)) {
+    if (pets[id]) {
+      Object.assign(pets[id].stats, p.stats);
+      pets[id].sleeping = p.sleeping;
+    } else pets[id] = p;
+  }
+  for (const id of Object.keys(pets)) if (!data.pets[id]) delete pets[id];
+  Object.assign(state, data, { pets });
+  return mainChanged;
 }
 
 function renameIds(data: GameState): GameState {
@@ -115,8 +165,11 @@ function renameIds(data: GameState): GameState {
 
 export function save(): void {
   state.lastSeen = Date.now();
+  if (readOnly) return;
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const raw = JSON.stringify(state);
+    localStorage.setItem(SAVE_KEY, raw);
+    lastWritten = raw;
   } catch {
     // 私密模式等情況寫不進去，忽略
   }
@@ -128,6 +181,8 @@ export function resetSave(): void {
   } catch {
     // 忽略
   }
+  readOnly = false;
+  lastWritten = null;
   Object.assign(state, freshState());
 }
 

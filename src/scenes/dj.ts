@@ -12,7 +12,7 @@ import { playDjBeat, type DjLayers } from '../music';
 import { applyDj, djBlocked, GAME_ENERGY, GAME_MOOD } from '../pet';
 import { go, type Scene } from '../router';
 import { mainPet, passTimeNow, save, state } from '../state';
-import { h, modal } from '../ui';
+import { h, modal, toast } from '../ui';
 import { drawClock, ROOM, ZOOM } from './home';
 import { drawCountdown, WINDOWS } from './rhythm';
 
@@ -313,6 +313,7 @@ export function djScene(): Scene {
   let raf = 0;
   let timer = 0;
   let press: (k: keyof DjLayers | 'scratch') => void = () => {};
+  let onVisibility = () => {};
   const onKey = (e: KeyboardEvent) => {
     if (e.repeat) return;
     if (e.key === '1') press('drums');
@@ -501,6 +502,21 @@ export function djScene(): Scene {
         );
       };
 
+      // 切到背景：計時器變慢，回來時沒排的拍子會一次全部爆出來，所以這局直接取消（不扣體力、不給獎勵）
+      let cancelled = false;
+      onVisibility = () => {
+        if (document.hidden && playing) {
+          playing = false;
+          clearInterval(timer);
+          cancelled = true;
+          ready();
+        } else if (!document.hidden && cancelled) {
+          cancelled = false;
+          toast('切到背景了，這局先取消');
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+
       function ready(): void {
         const blocked = pet && djBlocked(pet);
         if (blocked) {
@@ -628,6 +644,7 @@ export function djScene(): Scene {
       cancelAnimationFrame(raf);
       clearInterval(timer);
       window.removeEventListener('keydown', onKey);
+      document.removeEventListener('visibilitychange', onVisibility);
     },
   };
 }

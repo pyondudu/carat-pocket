@@ -196,13 +196,14 @@ const SPRITE_FILES: Record<Pose, string> = { happy: 'happy', sad: 'sad', sick: '
 const images = new Map<string, HTMLImageElement>();
 const RIGS = faces as unknown as Record<string, FaceRig>; // JSON 由 tools/face_rig.py 產生
 
-/** 開始遊戲前先載入所有角色圖；載入失敗的就退回佔位圖 */
-/** onProgress(已載入, 總數)：讀取畫面的進度條用 */
-export function loadSprites(onProgress?: (done: number, total: number) => void): Promise<void> {
+/** 開始遊戲前先載入角色圖；載入失敗的就退回佔位圖 */
+/** onProgress(已載入, 總數)：讀取畫面的進度條用；sheet＝角色總表，另外載搖飲料版 */
+export function loadSprites(onProgress?: (done: number, total: number) => void, sheet = false): Promise<void> {
   let done = 0;
   const jobs = SPRITE_IDS.flatMap((id) =>
-    // 有程式五官的角色不需要生病版，改載無五官底圖
-    [...new Set(Object.values(SPRITE_FILES))].map((f) => (RIGS[id] && f === 'sick' ? 'base' : f)).map(
+    // 有程式五官的角色：表情由程式畫，只要開心版（取原本的五官）和無五官底圖；
+    // 其他角色（O.C.L）載各表情的圖。搖飲料版遊戲裡已經不用（手搖飲畫開心版＋程式雪克杯），只有總表要看
+    [...(RIGS[id] ? ['happy', 'base'] : ['happy', 'sad', 'sick', 'sleep']), ...(sheet ? ['shake'] : [])].map(
       (file) =>
         new Promise<void>((resolve) => {
           const img = new Image();

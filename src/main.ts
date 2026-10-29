@@ -1,6 +1,6 @@
 import './style.css';
 import { loadSprites } from './draw';
-import { go, register } from './router';
+import { currentScene, go, register } from './router';
 import { homeScene } from './scenes/home';
 import { introScene } from './scenes/intro';
 import { selectScene } from './scenes/select';
@@ -9,8 +9,8 @@ import { djScene } from './scenes/dj';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
-import { setupPwa } from './update';
-import { awayMessage, catchUp, dailyFoodMessage, mainPet, save, state } from './state';
+import { setupPwa, showBanner } from './update';
+import { awayMessage, catchUp, dailyFoodMessage, mainPet, reloadIfChanged, save, saveBlocked, state } from './state';
 import { getCharacter } from './data/characters';
 import { h, modal, toast } from './ui';
 
@@ -44,7 +44,7 @@ loadSprites((done, total) => {
   const pct = Math.round((done / total) * 100);
   if (fill) fill.style.width = `${Math.max(4, pct)}%`;
   if (loadingText) loadingText.textContent = `載入中… ${pct}%`;
-}).then(() => {
+}, location.hash === '#sheet').then(() => {
   // #sheet：角色總表，檢查表情與比例用
   if (location.hash === '#sheet') return go('sheet');
   // #rhythm：應援預覽（還沒選本命也能看）
@@ -55,9 +55,29 @@ loadSprites((done, total) => {
   go(state.mainId ? 'home' : 'intro');
 });
 
+/** 別的視窗（另一個分頁或安裝的 App）改過存檔：重新讀進來，才不會拿舊資料蓋回去；本命換了才重新進入畫面 */
+function syncFromOtherWindow(): void {
+  const mainChanged = reloadIfChanged();
+  if (saveBlocked()) showBanner(); // 別的視窗是新版，這裡停止存檔
+  if (!mainChanged) return;
+  if (!currentScene() || currentScene() === 'sheet') return;
+  document.querySelectorAll('.backdrop').forEach((el) => el.remove());
+  go(state.mainId ? 'home' : 'intro');
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === null || e.key === 'carat-pocket-save') syncFromOtherWindow();
+});
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') save();
-  else welcomeBack();
+  else {
+    syncFromOtherWindow();
+    welcomeBack();
+  }
 });
+
+// 存檔是比較新的版本存的（這裡是還沒更新的舊版）：不存檔，請玩家更新
+if (saveBlocked()) showBanner();
 
 setupPwa();

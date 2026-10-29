@@ -18,7 +18,8 @@ async function checkUpdate(): Promise<void> {
   }
 }
 
-function showBanner(): void {
+export function showBanner(): void {
+  if (shown) return;
   shown = true;
   document.body.append(h('button', { className: 'update-banner', textContent: '✨ 有新版本，點這裡更新', onclick: applyUpdate }));
 }

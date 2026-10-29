@@ -1,7 +1,7 @@
 {
   "name": "Carat Pocket",
   "short_name": "Carat Pocket",
-  "description": "口袋裡的 MINITEEN 電子雞",
+  "description": "口袋裡的像素電子雞",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

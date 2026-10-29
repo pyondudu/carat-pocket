@@ -216,6 +216,8 @@ canvas.room {
 /* 重新開始：會刪存檔，用紅色提醒 */
 button.secondary.danger { color: #c0392b; border-color: #c0392b; }
 button.primary.danger { background: #c0392b; border-color: #8e2a20; color: #fff; }
+/* 玩法說明最下面的重新開始：紅底白字，跟上面的文宣和署名隔開 */
+button.danger.restart { background: #c0392b; border-color: #8e2a20; box-shadow: 0 3px 0 #8e2a20; color: #fff; font-weight: 700; padding: 8px 20px; margin-top: 28px; }
 
 /* 應援 */
 .rhythm-stage { display: flex; flex-direction: column; gap: 8px; }

@@ -248,9 +248,10 @@ export function homeScene(): Scene {
         );
       };
       // 玩法說明最下面放「重新開始」，要再確認一次才會刪存檔（原本只有 #debug 有重來）
+      // 紅底白字、放在署名下面離圖片遠一點，滑文宣時才不會誤觸（使用者 2026-10-29）
       const helpModal = () => {
-        const restart = h('button', { className: 'secondary danger', textContent: '🔄 重新開始' });
-        const closeHelp = modal(h('h2', { textContent: '怎麼玩' }), howToPlay(), restart, musicCredit());
+        const restart = h('button', { className: 'danger restart', textContent: '🔄 重新開始' });
+        const closeHelp = modal(h('h2', { textContent: '怎麼玩' }), howToPlay(), musicCredit(), restart);
         restart.onclick = () => {
           closeHelp();
           const yes = h('button', { className: 'primary danger', textContent: '確定重新開始' });

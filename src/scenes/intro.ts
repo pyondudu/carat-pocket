@@ -1,23 +1,28 @@
-// 開頭說明：第一次打開（還沒選本命）時出現，按「開始遊戲」進入選本命；房間的「？」也會顯示同一份說明
+// 開頭說明：第一次打開（還沒選本命）時出現，按「開始遊戲」進入選本命；房間的「📖 玩法說明」也會顯示同一份說明
 
 import { go, type Scene } from '../router';
 import { h } from '../ui';
 
-/** 玩法說明（開頭畫面與房間的「？」共用） */
+/** 文宣圖（public/promo/，從共用資料夾的文宣 PNG 縮成寬 720 的 WebP；使用者 2026-10-29 決定用文宣取代文字說明） */
+const PROMO_PAGES = ['封面', '養成', '手搖飲', '節奏應援', 'DJ'];
+
+/** 玩法說明（開頭畫面與房間的「📖 玩法說明」共用）：文宣圖左右滑動翻頁，下面是頁碼點 */
 export function howToPlay(): HTMLElement {
-  const step = (icon: string, title: string, text: string) =>
-    h('li', {}, h('span', { className: 'icon', textContent: icon }), h('div', {}, h('strong', { textContent: title }), h('small', { textContent: text })));
-  return h(
-    'ul',
-    { className: 'howto' },
-    step('💖', '選一個本命來養', '從 13 個角色選 1 個，選了就不能換'),
-    step('🍙', '好好照顧他', '飽足、心情、清潔照真實時間下降'),
-    step('🥤', '手搖飲賺金幣', '10 秒內拼命點，點越多越好喝'),
-    step('🎵', '節奏應援賺金幣', '跟著歌曲按粉、藍按鈕，比較累但更開心'),
-    step('🎧', 'DJ', '亮起哪個圖示就開哪個音軌，唱盤亮了就刷碟'),
-    step('🛍️', '商店', '買食物，存錢解鎖新角色'),
-    step('🏠', '邀請孩子作客', '解鎖的角色可以來玩，還多一種原料'),
+  const track = h(
+    'div',
+    { className: 'promo-track' },
+    ...PROMO_PAGES.map((alt, i) => h('img', { src: `./promo/${i}.webp`, alt, loading: i === 0 ? 'eager' : 'lazy', draggable: false })),
   );
+  const dots = PROMO_PAGES.map((alt, i) =>
+    h('button', { className: 'promo-dot', ariaLabel: alt, onclick: () => track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' }) }),
+  );
+  const update = () => {
+    const page = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    dots.forEach((d, i) => d.classList.toggle('on', i === page));
+  };
+  track.addEventListener('scroll', update, { passive: true });
+  update();
+  return h('div', { className: 'promo' }, track, h('div', { className: 'promo-dots' }, ...dots));
 }
 
 /** 節奏應援音樂的署名（BreakingCopyright 要求寫曲名、作者、授權與連結） */
@@ -33,16 +38,14 @@ export function musicCredit(): HTMLElement {
 export function introScene(): Scene {
   return {
     mount(root) {
+      // 文宣封面已有標題和鑽石，這裡不再放
       root.append(
         h(
           'div',
           { className: 'screen intro' },
-          h('h1', { className: 'intro-title', textContent: 'Carat Pocket' }),
-          h('p', { className: 'hint', textContent: '口袋裡的 MINITEEN 電子雞' }),
-          h('p', { className: 'disclaimer', textContent: '（SEVENTEEN MINITEEN 粉絲二創，非官方、非營利）\n存檔只在你自己的瀏覽器裡' }),
-          h('img', { className: 'intro-logo', src: './icons/diamond-px.png', alt: '' }),
           howToPlay(),
           h('button', { className: 'primary start', textContent: '開始遊戲', onclick: () => go('select') }),
+          h('p', { className: 'disclaimer', textContent: '存檔只在你自己的瀏覽器裡' }),
           musicCredit(),
         ),
       );

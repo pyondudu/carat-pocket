@@ -27,8 +27,8 @@ export function homeScene(): Scene {
 
       const canvas = h('canvas', { className: 'pixel room', width: ROOM * ZOOM, height: ROOM * ZOOM });
       const ctx = canvas.getContext('2d')!;
+      // 右上角只顯示金幣，食物數量在餵食選單看（使用者 2026-10-29：巧克力會被切掉）
       const coins = h('span');
-      const food = h('span');
       const bars = new Map<keyof PetStats, HTMLDivElement>();
       const statsEl = h('div', { className: 'stats' });
       for (const k of Object.keys(STAT_LABELS) as (keyof PetStats)[]) {
@@ -39,7 +39,6 @@ export function homeScene(): Scene {
 
       const refresh = () => {
         coins.textContent = `🪙 ${state.coins}`;
-        food.replaceChildren(`🍙 ${state.food}`, ...(state.specialFood ? [' ', foodIcon(char.specialIcon), ` ${state.specialFood}`] : []), ...(state.chocolate ? [` 🍫 ${state.chocolate}`] : []));
         for (const [k, fill] of bars) {
           const v = pet.stats[k];
           fill.style.width = `${v}%`;
@@ -289,7 +288,7 @@ export function homeScene(): Scene {
             { className: 'bar' },
             h('h1', { className: 'pixel-title', textContent: 'Carat Pocket' }),
             h('button', { className: 'help', textContent: '📖 玩法說明', onclick: helpModal }),
-            h('div', { className: 'wallet' }, coins, food),
+            h('div', { className: 'wallet' }, coins),
           ),
           canvas,
           guestBtn,

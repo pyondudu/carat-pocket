@@ -23,7 +23,7 @@ npm run build    # 型別檢查 + 打包到 dist/
 | `src/main.ts` | 進入點、回到 App 時的離線補算 |
 | `src/router.ts` | 畫面切換 |
 | `src/update.ts`、`public/sw.js`、`public/manifest.webmanifest` | PWA：快取程式、新版本檢查（比對建置時寫入的 `__BUILD_ID__` 和 `version.json`）、App 資訊 |
-| `src/scenes/intro.ts` | 開頭說明（第一次打開時出現，按「開始遊戲」進選本命；房間的「📖 玩法說明」按鈕也顯示這份玩法） |
+| `src/scenes/intro.ts`、`public/promo/` | 開頭說明（第一次打開時出現，按「開始遊戲」進選本命；房間的「📖 玩法說明」按鈕也顯示這份）：5 張文宣圖左右滑動翻頁（文宣 PNG 縮成寬 720 的 WebP） |
 | `src/state.ts` | 遊戲狀態、localStorage 存檔、「你不在的時候…」訊息 |
 | `src/pet.ts` | 四項數值（飽足／心情／清潔／體力）、衰減、表情、動作 |
 | `src/data/characters.ts` | 13 個角色資料（成員、喜歡的食物、MBTI、專屬原料、解鎖價格） |

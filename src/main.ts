@@ -9,6 +9,7 @@ import { djScene } from './scenes/dj';
 import { shakeScene } from './scenes/shake';
 import { shopScene } from './scenes/shop';
 import { sheetScene } from './scenes/sheet';
+import { watchScene } from './scenes/watch';
 import { setupPwa, showBanner } from './update';
 import { awayMessage, catchUp, dailyFoodMessage, mainPet, reloadIfChanged, save, saveBlocked, state } from './state';
 import { getCharacter } from './data/characters';
@@ -22,6 +23,7 @@ register('shake', shakeScene);
 register('shop', shopScene);
 register('rhythm', rhythmScene);
 register('dj', djScene);
+register('watch', watchScene);
 
 /** 補算離開期間的時間，離開夠久就顯示「你不在的時候…」 */
 function welcomeBack(): void {
@@ -47,6 +49,8 @@ loadSprites((done, total) => {
 }, location.hash === '#sheet').then(() => {
   // #sheet：角色總表，檢查表情與比例用
   if (location.hash === '#sheet') return go('sheet');
+  // #watch：手錶版 Pocket 畫面預覽＋輸出手錶用的圖（工具頁）
+  if (location.hash.startsWith('#watch')) return go('watch');
   // #rhythm：應援預覽（還沒選本命也能看）
   if (location.hash === '#rhythm') return go('rhythm');
   // #dj：DJ 預覽（製作中）
@@ -60,7 +64,7 @@ function syncFromOtherWindow(): void {
   const mainChanged = reloadIfChanged();
   if (saveBlocked()) showBanner(); // 別的視窗是新版，這裡停止存檔
   if (!mainChanged) return;
-  if (!currentScene() || currentScene() === 'sheet') return;
+  if (!currentScene() || currentScene() === 'sheet' || currentScene() === 'watch') return;
   document.querySelectorAll('.backdrop').forEach((el) => el.remove());
   go(state.mainId ? 'home' : 'intro');
 }

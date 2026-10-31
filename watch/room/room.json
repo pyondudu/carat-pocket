@@ -1,0 +1,157 @@
+{
+  "note": "由 Carat Pocket 的 #watch 頁產生，不要手改；規則見 RULES.md",
+  "size": 64,
+  "layers": {
+    "base": "base.png",
+    "window": {
+      "day": "window_day.png",
+      "dusk": "window_dusk.png",
+      "night": "window_night.png"
+    },
+    "windowRule": "6:00–16:59 day、17:00–18:59 dusk、19:00–5:59 night"
+  },
+  "trash": [
+    {
+      "x": 1,
+      "y": 46,
+      "file": "trash_paper.png",
+      "below": 70
+    },
+    {
+      "x": 52,
+      "y": 46,
+      "file": "trash_can.png",
+      "below": 55
+    },
+    {
+      "x": 10,
+      "y": 54,
+      "file": "trash_peel.png",
+      "below": 40
+    },
+    {
+      "x": 56,
+      "y": 50,
+      "file": "trash_paper.png",
+      "below": 40
+    },
+    {
+      "x": 0,
+      "y": 58,
+      "file": "trash_can.png",
+      "below": 25
+    },
+    {
+      "x": 52,
+      "y": 58,
+      "file": "trash_peel.png",
+      "below": 15
+    }
+  ],
+  "broom": {
+    "file": "broom.png",
+    "sweepMs": 1500,
+    "top": 49,
+    "rule": "刷毛中心 x 從 -4 線性走到 ROOM+4；x − 3 是圖的左邊，再加 sin(t/70)×2 左右刷；中心經過的垃圾消失"
+  },
+  "clock": {
+    "x": 1,
+    "y": 1,
+    "w": 21,
+    "h": 9,
+    "frame": "#8a6a52",
+    "screen": "#2f3a4a",
+    "digit": "#9ff0c4",
+    "screenInset": 1,
+    "digitY": 3,
+    "digitX": [
+      3,
+      7,
+      13,
+      17
+    ],
+    "colon": [
+      [
+        11,
+        4
+      ],
+      [
+        11,
+        6
+      ]
+    ],
+    "digits": [
+      [
+        7,
+        5,
+        5,
+        5,
+        7
+      ],
+      [
+        2,
+        6,
+        2,
+        2,
+        7
+      ],
+      [
+        7,
+        1,
+        7,
+        4,
+        7
+      ],
+      [
+        7,
+        1,
+        7,
+        1,
+        7
+      ],
+      [
+        5,
+        5,
+        7,
+        1,
+        1
+      ],
+      [
+        7,
+        4,
+        7,
+        1,
+        7
+      ],
+      [
+        7,
+        4,
+        7,
+        5,
+        7
+      ],
+      [
+        7,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        7,
+        5,
+        7,
+        5,
+        7
+      ],
+      [
+        7,
+        5,
+        7,
+        1,
+        7
+      ]
+    ],
+    "digitRule": "3×5，每列 3 bit（4=左、1=右）；冒號秒數偶數時亮"
+  }
+}

@@ -415,10 +415,11 @@ function guest() {
 }
 
 /** 房間背景；搖飲料畫面不放窗戶 */
-export function drawRoom(ctx: CanvasRenderingContext2D, withWindow = true): void {
+/** now：窗外天色和時鐘用的時間；withClock＝false 不畫時鐘（輸出手錶圖層用） */
+export function drawRoom(ctx: CanvasRenderingContext2D, withWindow = true, now = new Date(), withClock = true): void {
   ctx.fillStyle = '#fde7e4';
   ctx.fillRect(0, 0, ROOM, ROOM);
-  if (withWindow) drawWindow(ctx, new Date());
+  if (withWindow) drawWindow(ctx, now);
   // 地板
   ctx.fillStyle = '#e8c39e';
   ctx.fillRect(0, 44, ROOM, ROOM - 44);
@@ -427,11 +428,11 @@ export function drawRoom(ctx: CanvasRenderingContext2D, withWindow = true): void
   // 地毯
   ctx.fillStyle = '#92a8d1';
   ctx.fillRect(14, 52, 36, 6);
-  drawClock(ctx, new Date());
+  if (withClock) drawClock(ctx, now);
 }
 
 /** 窗戶：窗外天色跟真實時間走（白天藍天白雲、傍晚橘、晚上星星月亮），兩側粉紅窗簾 */
-function drawWindow(ctx: CanvasRenderingContext2D, now: Date): void {
+export function drawWindow(ctx: CanvasRenderingContext2D, now: Date): void {
   const px = (x: number, y: number, w: number, h: number, c: string) => {
     ctx.fillStyle = c;
     ctx.fillRect(x, y, w, h);
@@ -484,7 +485,7 @@ function drawWindow(ctx: CanvasRenderingContext2D, now: Date): void {
 }
 
 // 3×5 像素數字（0～9），每列 3 bit
-const DIGITS = [
+export const DIGITS = [
   [7, 5, 5, 5, 7], [2, 6, 2, 2, 7], [7, 1, 7, 4, 7], [7, 1, 7, 1, 7], [5, 5, 7, 1, 1],
   [7, 4, 7, 1, 7], [7, 4, 7, 5, 7], [7, 1, 1, 1, 1], [7, 5, 7, 5, 7], [7, 5, 7, 1, 7],
 ];
@@ -513,18 +514,18 @@ export function drawClock(ctx: CanvasRenderingContext2D, now: Date): void {
 
 // 地上的垃圾：清潔越低越多，按「清潔」回滿就全部消失
 // 像素圖，一個字一格；'.' 透明
-const TRASH_ART = {
+export const TRASH_ART = {
   paper: ['..oooo..', '.owwgwo.', 'owgwwwwo', 'owwwgwgo', 'owgwwwwo', '.owwgwo.', '..oooo..'],
   peel: ['....b...', '...yy...', '..yyyy..', '.yYyyYy.', 'yY.yy.Yy', 'y..yy..y', '...dd...'],
   can: ['.oooooooo.', 'oSrrrrrrSo', 'oSwwwwwwSo', 'oSrrrrrrSo', '.oooooooo.'],
 };
-const TRASH_COLORS: Record<string, string> = {
+export const TRASH_COLORS: Record<string, string> = {
   o: '#4a4550', w: '#fbfaf6', g: '#b9b3a8', // 紙團
   b: '#6b4a1e', y: '#f5d04a', Y: '#d9a72a', d: '#8a6a2a', // 香蕉皮
   S: '#cfd6de', r: '#e5534b', // 空罐
 };
 // [x, y, 種類, 清潔低於多少才出現]；擺在角色兩側的地板
-const TRASH: [number, number, keyof typeof TRASH_ART, number][] = [
+export const TRASH: [number, number, keyof typeof TRASH_ART, number][] = [
   [1, 46, 'paper', 70],
   [52, 46, 'can', 55],
   [10, 54, 'peel', 40],
@@ -534,10 +535,10 @@ const TRASH: [number, number, keyof typeof TRASH_ART, number][] = [
 ];
 
 /** 清潔低於多少地上才有垃圾 */
-const TRASH_FROM = Math.max(...TRASH.map((t) => t[3]));
+export const TRASH_FROM = Math.max(...TRASH.map((t) => t[3]));
 
 /** sweptX：掃把掃到哪裡（房間格），垃圾中心在它左邊的已經掃掉 */
-function drawTrash(ctx: CanvasRenderingContext2D, clean: number, sweptX = -Infinity): void {
+export function drawTrash(ctx: CanvasRenderingContext2D, clean: number, sweptX = -Infinity): void {
   for (const [x, y, kind, below] of TRASH) {
     if (clean >= below) continue;
     if (x + TRASH_ART[kind][0].length / 2 < sweptX) continue;
@@ -552,8 +553,8 @@ function drawTrash(ctx: CanvasRenderingContext2D, clean: number, sweptX = -Infin
 }
 
 // 清潔的掃把：由左往右掃過地板，一邊左右刷
-const SWEEP_MS = 1500;
-const BROOM_ART = [
+export const SWEEP_MS = 1500;
+export const BROOM_ART = [
   '......h',
   '.....h.',
   '.....h.',
@@ -567,12 +568,12 @@ const BROOM_ART = [
   'YyYyYyY',
   'yYyYyYy',
 ];
-const BROOM_COLORS: Record<string, string> = { h: '#8a5a2b', r: '#e5534b', y: '#f2cf63', Y: '#c99a35' };
+export const BROOM_COLORS: Record<string, string> = { h: '#8a5a2b', r: '#e5534b', y: '#f2cf63', Y: '#c99a35' };
 
 /** 掃地進度 0～1 → 掃把（刷毛中心）在第幾格 */
-const sweepX = (p: number) => -4 + Math.min(1, p) * (ROOM + 8);
+export const sweepX = (p: number) => -4 + Math.min(1, p) * (ROOM + 8);
 
-function drawBroom(ctx: CanvasRenderingContext2D, x: number, t: number): void {
+export function drawBroom(ctx: CanvasRenderingContext2D, x: number, t: number): void {
   const left = Math.round(x + Math.sin(t / 70) * 2) - 3;
   const top = ROOM - 3 - BROOM_ART.length;
   BROOM_ART.forEach((row, dy) =>

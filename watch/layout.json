@@ -1,0 +1,43 @@
+{
+  "note": "由 Carat Pocket 的 #watch 頁產生，不要手改；規則見 RULES.md",
+  "screen": {
+    "w": 410,
+    "h": 502
+  },
+  "stats": {
+    "x": 20,
+    "y": 14,
+    "colW": 180,
+    "gap": 10,
+    "rowH": 30,
+    "barH": 14
+  },
+  "room": {
+    "x": 45,
+    "y": 82,
+    "zoom": 5
+  },
+  "char": {
+    "floorCell": 57,
+    "fullHeight": 210,
+    "pxCell": 4
+  },
+  "buttons": {
+    "y": 414,
+    "h": 74,
+    "w": 116,
+    "gap": 11,
+    "radius": 12,
+    "border": 2,
+    "shadow": 3
+  },
+  "colors": {
+    "bg": "#fff6f2",
+    "ink": "#2b2b2b",
+    "barOk": "#8fd18f",
+    "barLow": "#f08a8a",
+    "barLowBelow": 40,
+    "button": "#ffffff",
+    "buttonSecondary": "#eef2fb"
+  }
+}

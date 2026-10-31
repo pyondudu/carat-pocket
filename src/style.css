@@ -117,7 +117,7 @@ canvas.room {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom));
   transform: translate(-50%, 20px); opacity: 0; transition: 0.25s;
   background: var(--ink); color: #fff; padding: 8px 16px; border-radius: 999px; z-index: 20;
-  pointer-events: none;
+  pointer-events: none; white-space: pre-line; text-align: center; width: max-content; max-width: calc(100vw - 32px);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 .select .bar h1, .select .hint, .unit h2 { text-align: center; text-wrap: balance; }
@@ -269,3 +269,9 @@ canvas.lane { width: 100%; border: 2px solid var(--line); border-radius: 12px; d
 .level.easy { background: #fde6ee; }
 .level.normal { background: #ece4fa; }
 .level.hard { background: #e2ebfb; }
+
+/* 手錶版預覽（#watch） */
+.watch-screen { width: min(100%, 410px); height: auto; display: block; margin: 0 auto; border: 3px solid var(--line); border-radius: 36px; background: #000; }
+.watch-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.9rem; }
+.watch-controls label { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.watch-controls select, .watch-controls input { font: inherit; min-width: 0; flex: 1; }

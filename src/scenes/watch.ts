@@ -8,17 +8,22 @@ import { STAT_LABELS } from '../pet';
 import type { Scene } from '../router';
 import { state } from '../state';
 import { h, toast } from '../ui';
-import { BROOM_ART, BROOM_COLORS, DIGITS, drawBroom, drawRoom, drawTrash, drawWindow, ROOM, sweepX, SWEEP_MS, TRASH, TRASH_ART, TRASH_COLORS } from './home';
+import { BROOM_ART, BROOM_COLORS, drawBroom, drawRoom, drawTrash, drawWindow, ROOM, sweepX, SWEEP_MS, TRASH, TRASH_ART, TRASH_COLORS } from './home';
 
 // ── 手錶畫面版面（px，手錶螢幕座標）──
 export const WATCH = { w: 410, h: 502 };
 const ZOOM = 5; // 房間 64 格 × 5 = 320
+// 螢幕四角是圓的（2026-11-01 實機照片估約半徑 80），數值條和按鈕都收進跟房間一樣寬（x 45～365），角落不放東西
+const SIDE = (WATCH.w - ROOM * ZOOM) / 2;
 export const LAYOUT = {
-  stats: { x: 20, y: 14, colW: 180, gap: 10, rowH: 30, barH: 14 }, // 2 欄 × 2 列
-  room: { x: (WATCH.w - ROOM * ZOOM) / 2, y: 82, zoom: ZOOM },
+  corner: 80,
+  stats: { x: SIDE, y: 14, colW: 155, gap: 10, rowH: 30, barH: 14, labelW: 38 }, // 2 欄 × 2 列
+  room: { x: SIDE, y: 82, zoom: ZOOM },
   // 角色：水平置中、腳底在房間第 57 格（跟網頁一樣）；原畫質高 210（網頁 168 × 5/4），56 格版一格 4px
   char: { floorCell: ROOM - 7, fullHeight: 210, pxCell: 4 },
-  buttons: { y: 414, h: 74, w: 116, gap: 11, radius: 12, border: 2, shadow: 3 },
+  // 摸摸本命（手錶限定）：按在本命圖上左右來回滑，每段 ≥ minStroke px，換方向 reversals 次落在 windowMs 內就算一次
+  rub: { minStroke: 25, reversals: 4, windowMs: 2000, mood: 5, perDay: 5 },
+  buttons: { y: 410, h: 70, w: 100, gap: 10, radius: 12, border: 2, shadow: 3 },
 };
 
 const POSES: Mood[] = ['happy', 'sad', 'sick', 'sleep'];
@@ -109,11 +114,6 @@ async function exportAll(onProgress: (msg: string) => void): Promise<void> {
     // [x, y, 種類, 清潔「低於」這個值才出現]（房間格座標，左上角）
     trash: TRASH.map(([x, y, kind, below]) => ({ x, y, file: `trash_${kind}.png`, below })),
     broom: { file: 'broom.png', sweepMs: SWEEP_MS, top: ROOM - 3 - BROOM_ART.length, rule: '刷毛中心 x 從 -4 線性走到 ROOM+4；x − 3 是圖的左邊，再加 sin(t/70)×2 左右刷；中心經過的垃圾消失' },
-    clock: {
-      x: 1, y: 1, w: 21, h: 9, frame: '#8a6a52', screen: '#2f3a4a', digit: '#9ff0c4',
-      screenInset: 1, digitY: 3, digitX: [3, 7, 13, 17], colon: [[11, 4], [11, 6]],
-      digits: DIGITS, digitRule: '3×5，每列 3 bit（4=左、1=右）；冒號秒數偶數時亮',
-    },
   };
   await upload('room/room.json', JSON.stringify(room, null, 2) + '\n');
   await upload('layout.json', JSON.stringify({ note: room.note, screen: WATCH, ...LAYOUT, colors: { bg: SCREEN_BG, ink: INK, barOk: BAR_OK, barLow: BAR_LOW, barLowBelow: 40, button: BTN_BG, buttonSecondary: BTN_SECONDARY } }, null, 2) + '\n');
@@ -128,6 +128,8 @@ export function watchScene(): Scene {
       const ctx = cv.getContext('2d')!;
       const opts = { id: state.mainId ?? CHARACTERS.find(hasSprite)!.id, pose: 'happy' as Mood, time: 'day' as TimeKey, clean: 90, px: false, food: 12 };
       let hopAt = -1e9;
+      let moodAdd = 0; // 預覽：摸摸加的心情
+      let rubLeft = LAYOUT.rub.perDay;
       let sweepAt: number | undefined;
       const pxImages = new Map<string, HTMLImageElement | null>();
 
@@ -174,7 +176,8 @@ export function watchScene(): Scene {
 
       const render = (t: number) => {
         const c = getCharacter(opts.id);
-        const stats = { ...PRESET[opts.pose], clean: opts.clean };
+        const base = PRESET[opts.pose];
+        const stats = { ...base, mood: Math.min(100, base.mood + moodAdd), clean: opts.clean };
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = SCREEN_BG;
         ctx.fillRect(0, 0, WATCH.w, WATCH.h);
@@ -189,8 +192,8 @@ export function watchScene(): Scene {
           ctx.textBaseline = 'middle';
           ctx.font = "16px 'Noto Sans TC', sans-serif";
           ctx.fillText(STAT_LABELS[k], x, y + s.barH / 2 + 1);
-          const bx = x + 42;
-          const bw = s.colW - 42;
+          const bx = x + s.labelW;
+          const bw = s.colW - s.labelW;
           ctx.fillStyle = '#ffffff';
           roundRect(bx, y, bw, s.barH, 6);
           ctx.fill();
@@ -210,7 +213,7 @@ export function watchScene(): Scene {
         const now = timeAt(TIMES[opts.time], new Date().getMinutes());
         ctx.imageSmoothingEnabled = false;
         ctx.setTransform(r.zoom, 0, 0, r.zoom, r.x, r.y);
-        drawRoom(ctx, true, now);
+        drawRoom(ctx, true, now, false); // 錶面已經有時間，房間不放時鐘（使用者 2026-11-01）
         const broomX = sweepAt === undefined ? undefined : sweepX((t - sweepAt) / SWEEP_MS);
         drawTrash(ctx, broomX !== undefined && (t - sweepAt!) >= SWEEP_MS ? 100 : opts.clean, broomX);
 
@@ -248,6 +251,13 @@ export function watchScene(): Scene {
         button(xs[0], '餵食', `剩 ${opts.food} 個`);
         button(xs[1], '清潔', '');
         button(xs[2], opts.pose === 'sleep' ? '起床' : '睡覺', '', true);
+
+        // 圓角外面塗黑，模擬實機看不到的地方
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.rect(0, 0, WATCH.w, WATCH.h);
+        ctx.roundRect(0, 0, WATCH.w, WATCH.h, LAYOUT.corner);
+        ctx.fill('evenodd');
       };
 
       // 只有動畫中才持續重畫，平常靜止（跟手錶一樣省電）
@@ -297,9 +307,62 @@ export function watchScene(): Scene {
         play();
       };
 
-      // 手錶上沒有能加心情的動作：心情 < 40 時進 Pocket 提醒玩家用手機補（使用者 2026-10-31）
+      // 摸摸本命：按住本命左右來回滑（預覽用滑鼠拖或手指）
+      const RUB = LAYOUT.rub;
+      const charBox = () => {
+        const box = contentBox(getCharacter(opts.id));
+        const hh = LAYOUT.char.fullHeight;
+        const w = (hh * box.width) / box.height;
+        const floor = LAYOUT.room.y + LAYOUT.char.floorCell * LAYOUT.room.zoom;
+        return { x: WATCH.w / 2 - w / 2, y: floor - hh, w, h: hh };
+      };
+      const toScreen = (e: PointerEvent) => {
+        const rect = cv.getBoundingClientRect();
+        return { x: ((e.clientX - rect.left) * WATCH.w) / rect.width, y: ((e.clientY - rect.top) * WATCH.h) / rect.height };
+      };
+      let rub: { lastX: number; dir: number; travel: number; turns: number[]; done: boolean } | null = null;
+      cv.style.touchAction = 'none';
+      cv.onpointerdown = (e) => {
+        const p = toScreen(e);
+        const b = charBox();
+        rub = p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h ? { lastX: p.x, dir: 0, travel: 0, turns: [], done: false } : null;
+      };
+      cv.onpointermove = (e) => {
+        if (!rub || rub.done || !(e.buttons & 1)) return;
+        const x = toScreen(e).x;
+        const dx = x - rub.lastX;
+        rub.lastX = x;
+        if (!dx) return;
+        const d = Math.sign(dx);
+        if (d === rub.dir || rub.dir === 0) {
+          rub.dir = d;
+          rub.travel += Math.abs(dx);
+          return;
+        }
+        if (rub.travel < RUB.minStroke) {
+          // 這一段太短：當成手抖，不算換方向
+          rub.travel = Math.max(0, rub.travel - Math.abs(dx));
+          return;
+        }
+        const now = performance.now();
+        rub.turns = [...rub.turns.filter((t) => now - t <= RUB.windowMs), now];
+        rub.dir = d;
+        rub.travel = Math.abs(dx);
+        if (rub.turns.length < RUB.reversals) return;
+        rub.done = true; // 一次按住只算一次
+        if (opts.pose === 'sleep') return toast('噓…正在睡覺');
+        if (rubLeft <= 0) return toast('今天摸夠了，\n用手機陪他玩吧');
+        rubLeft--;
+        moodAdd += RUB.mood;
+        toast(`心情 +${RUB.mood}（今天還剩 ${rubLeft} 次）`);
+        hopAt = performance.now();
+        play();
+      };
+      cv.onpointerup = cv.onpointercancel = () => (rub = null);
+
+      // 手錶上加心情只有摸摸（一天 5 次）：心情 < 40 時進 Pocket 提醒玩家用手機補（使用者 2026-10-31）
       const moodHint = () => {
-        if (PRESET[opts.pose].mood < 40) toast(`${getCharacter(opts.id).name} 心情不太好，\n有空用手機陪他玩吧`);
+        if (PRESET[opts.pose].mood + moodAdd < 40) toast(`${getCharacter(opts.id).name} 心情不太好，\n有空用手機陪他玩吧`);
       };
 
       const select = <T extends string>(entries: [T, string][], value: T, set: (v: T) => void) => {
@@ -343,7 +406,7 @@ export function watchScene(): Scene {
           'div',
           { className: 'screen' },
           h('header', { className: 'bar' }, h('h1', { textContent: '手錶版預覽' })),
-          h('p', { className: 'hint', textContent: '410×502 手錶畫面；點下面三顆按鈕可以試操作' }),
+          h('p', { className: 'hint', textContent: '點按鈕試操作；按住本命左右來回滑是摸摸' }),
           cv,
           h(
             'div',

@@ -6,7 +6,7 @@ import { toast } from './ui';
 
 const SAVE_KEY = 'carat-pocket-save';
 const BACKUP_KEY = 'carat-pocket-save-backup';
-const VERSION = 8; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate；8：加入 DJ 紀錄 dj
+const VERSION = 9; // 2：加入飲料圖鑑 codex；3：加入本命特殊食物 specialFood；4：加入作客的夥伴 guest；5：加入節奏應援紀錄 rhythm；6：食物改成每天 9:00 發放 dailyFoodAt；7：加入巧克力 chocolate；8：加入 DJ 紀錄 dj；9：加入手錶摸摸次數 watchRub
 /** 改過的角色 id：舊存檔讀進來時換成新的 */
 const RENAMED_IDS: Record<string, string> = { shuasum: 'shuasumi' };
 
@@ -45,11 +45,13 @@ export interface GameState {
   rhythm: Record<string, { best: number; plays: number }>;
   /** DJ 紀錄：最高分、玩過幾次 */
   dj: { best: number; plays: number };
+  /** 手錶版「摸摸本命」今天用了幾次（只有手錶會改，網頁原樣保留給同步用）；at 是計數那天 9:00 的時間戳，過了下一個 9:00 歸零 */
+  watchRub: { count: number; at: number };
   lastSeen: number;
 }
 
 function freshState(): GameState {
-  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, dj: { best: 0, plays: 0 }, lastSeen: Date.now() };
+  return { version: VERSION, mainId: null, unlocked: [], pets: {}, coins: 50, food: 20, dailyFoodAt: lastDailyTime(), codex: {}, specialFood: 0, chocolate: 0, guest: null, rhythm: {}, dj: { best: 0, plays: 0 }, watchRub: { count: 0, at: lastDailyTime() }, lastSeen: Date.now() };
 }
 
 /** 存檔比這個程式新（舊版還開著）：照讀但不寫回，免得把新版的資料蓋掉 */
@@ -104,6 +106,10 @@ function load(): GameState {
       if (data.version === 7) {
         data.dj = { best: 0, plays: 0 };
         data.version = 8;
+      }
+      if (data.version === 8) {
+        data.watchRub = { count: 0, at: lastDailyTime(data.lastSeen) };
+        data.version = 9;
       }
       if (data.version === VERSION) return renameIds(data);
     }

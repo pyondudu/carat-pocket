@@ -4,13 +4,15 @@
     "w": 410,
     "h": 502
   },
+  "corner": 80,
   "stats": {
-    "x": 20,
+    "x": 45,
     "y": 14,
-    "colW": 180,
+    "colW": 155,
     "gap": 10,
     "rowH": 30,
-    "barH": 14
+    "barH": 14,
+    "labelW": 38
   },
   "room": {
     "x": 45,
@@ -22,11 +24,18 @@
     "fullHeight": 210,
     "pxCell": 4
   },
+  "rub": {
+    "minStroke": 25,
+    "reversals": 4,
+    "windowMs": 2000,
+    "mood": 5,
+    "perDay": 5
+  },
   "buttons": {
-    "y": 414,
-    "h": 74,
-    "w": 116,
-    "gap": 11,
+    "y": 410,
+    "h": 70,
+    "w": 100,
+    "gap": 10,
     "radius": 12,
     "border": 2,
     "shadow": 3

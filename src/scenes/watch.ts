@@ -17,7 +17,7 @@ const ZOOM = 5; // 房間 64 格 × 5 = 320
 const SIDE = (WATCH.w - ROOM * ZOOM) / 2;
 export const LAYOUT = {
   corner: 80,
-  stats: { x: SIDE, y: 14, colW: 155, gap: 10, rowH: 30, barH: 14, labelW: 38 }, // 2 欄 × 2 列
+  stats: { x: SIDE, y: 24, colW: 155, gap: 10, rowH: 30, barH: 14, labelW: 38 }, // 2 欄 × 2 列
   room: { x: SIDE, y: 82, zoom: ZOOM },
   // 角色：水平置中、腳底在房間第 57 格（跟網頁一樣）；原畫質高 210（網頁 168 × 5/4），56 格版一格 4px
   char: { floorCell: ROOM - 7, fullHeight: 210, pxCell: 4 },
